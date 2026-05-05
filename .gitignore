@@ -1,4 +1,12 @@
-*-workspace/
-.DS_Store
-grill-with-docs
-**/.claude/
+# Ignore everything by default
+*
+
+# Always track these root files
+!.gitignore
+!CLAUDE.md
+
+# Published skills (add two lines per new skill)
+!init-docs/
+!init-docs/**
+!commit/
+!commit/**
