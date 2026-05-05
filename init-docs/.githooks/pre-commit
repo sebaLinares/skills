@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#
+# pre-commit hook for the init-docs skill.
+# Refuses commits that touch assets/ or SKILL.md unless CHANGELOG.md
+# is also staged with an entry dated today. Keeps the changelog in
+# sync with asset edits — the mechanism that repos rely on for
+# upgrade audits.
+#
+# Bypass: SKILL_CHANGELOG_BYPASS="<reason>" git commit ...
+# See: SKILL.md → "How to update this skill".
+
+set -e
+
+if [ -n "${SKILL_CHANGELOG_BYPASS:-}" ]; then
+  echo "→ changelog-sync: BYPASSED — reason: $SKILL_CHANGELOG_BYPASS" >&2
+  exit 0
+fi
+
+TOUCHED=$(git diff --cached --name-only --diff-filter=ACM \
+  | grep -E '^(assets/|SKILL\.md$)' \
+  || true)
+
+if [ -z "$TOUCHED" ]; then
+  exit 0
+fi
+
+echo "→ pre-commit: checking changelog sync"
+echo "  touched:"
+echo "$TOUCHED" | sed 's/^/    /'
+
+CHANGELOG_STAGED=$(git diff --cached --name-only --diff-filter=ACM \
+  | grep -E '^CHANGELOG\.md$' \
+  || true)
+
+if [ -z "$CHANGELOG_STAGED" ]; then
+  {
+    echo "✗ changelog-sync: asset or SKILL.md changes staged without CHANGELOG.md"
+    echo "  expected: a staged entry in CHANGELOG.md dated $(date +%Y-%m-%d)"
+    echo "  bypass:   SKILL_CHANGELOG_BYPASS=\"<reason>\" git commit ..."
+    echo "  see:      SKILL.md → \"How to update this skill\""
+  } >&2
+  exit 1
+fi
+
+TODAY=$(date +%Y-%m-%d)
+if ! git diff --cached CHANGELOG.md | grep -qE "^\+## $TODAY"; then
+  {
+    echo "✗ changelog-sync: CHANGELOG.md staged but no entry dated $TODAY added"
+    echo "  expected: a new \"## $TODAY — <feature name>\" heading in the staged diff"
+    echo "  bypass:   SKILL_CHANGELOG_BYPASS=\"<reason>\" git commit ..."
+  } >&2
+  exit 1
+fi
+
+echo "  • changelog-sync (ok)"

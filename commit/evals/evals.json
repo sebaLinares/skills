@@ -1,0 +1,49 @@
+{
+  "skill_name": "commit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/commit",
+      "expected_output": "Skill detects staged or unstaged changes, spawns Haiku subagent for message, commits with Conventional Commit message + Co-Authored-By trailer, reports result.",
+      "files": [],
+      "expectations": [
+        "Runs git status or git diff to detect changes before doing anything",
+        "Stages files with git add -A when nothing is staged",
+        "Spawns a subagent with model haiku to generate the commit message",
+        "Generated commit message follows Conventional Commits format: type(scope): description",
+        "Commit type is one of: feat, fix, chore, refactor, test, docs, ai, schema, security, config",
+        "Runs git commit with the generated message",
+        "Co-Authored-By trailer is included in the commit",
+        "Reports commit hash and message to the user"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "ok I think we're done, commit the changes",
+      "expected_output": "Skill recognizes informal commit request, detects changes across subdirectory repos (frontend/, backend/), generates separate Conventional Commit messages per repo, commits each.",
+      "files": [],
+      "expectations": [
+        "Recognizes informal phrasing as a commit request without /commit keyword",
+        "Scans subdirectories to find repos with changes",
+        "Does not skip repos with changes in subdirs",
+        "Generates a distinct commit message per repo",
+        "Each message follows Conventional Commits format",
+        "Co-Authored-By trailer included in each commit",
+        "Reports all commits made in a clean summary"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "/commit",
+      "expected_output": "When working tree is clean, skill detects nothing to commit, reports clearly, does not attempt git commit or spawn Haiku.",
+      "files": [],
+      "expectations": [
+        "Runs git status to check for changes",
+        "Detects that there is nothing to commit",
+        "Reports 'nothing to commit' or equivalent message clearly",
+        "Does not run git commit",
+        "Does not spawn a Haiku subagent unnecessarily"
+      ]
+    }
+  ]
+}

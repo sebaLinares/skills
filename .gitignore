@@ -1,0 +1,4 @@
+*-workspace/
+.DS_Store
+grill-with-docs
+**/.claude/
