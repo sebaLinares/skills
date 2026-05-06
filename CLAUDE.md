@@ -1,6 +1,6 @@
 # Skills Repo
 
-Each skill lives in its own subdirectory. The git repo root is `~/.claude/skills/`.
+Each skill lives in its own subdirectory. The git repo root is `~/sebalinares-skills/`.
 
 ## Publishing a skill
 
@@ -18,6 +18,8 @@ git add .gitignore my-skill/
 git commit -m "feat: add my-skill"
 git push origin main
 ```
+
+After adding a new skill, re-run `install.sh` to create symlinks in all agent skill directories.
 
 ## Skill structure
 
@@ -37,3 +39,9 @@ my-skill/
 - `**/.claude/` — local agent permission files (settings.local.json)
 - `.DS_Store`
 - `grill-with-docs` — symlink to external agent
+
+## Symlink targets
+
+`install.sh` creates symlinks in:
+- `~/.claude/skills/` — Claude Code
+- `~/.agents/skills/` — OpenAI / Codex agents

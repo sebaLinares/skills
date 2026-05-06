@@ -1,15 +1,23 @@
-#!/bin/bash
-# Symlink all skills into ~/.claude/skills/
+#!/usr/bin/env bash
+# Symlink all skills into agent skill directories.
 # Run once after cloning, re-run when new skills are added.
-set -e
+set -euo pipefail
 
-SKILLS_REPO="$(cd "$(dirname "$0")" && pwd)"
-TARGET_DIR="$HOME/.claude/skills"
-mkdir -p "$TARGET_DIR"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-for skill_dir in "$SKILLS_REPO"/*/; do
-  skill_name=$(basename "$skill_dir")
-  [[ "$skill_name" == .* ]] && continue
-  ln -sfn "$skill_dir" "$TARGET_DIR/$skill_name"
-  echo "linked: $skill_name"
+TARGETS=(
+  "$HOME/.claude/skills"
+  "$HOME/.agents/skills"
+)
+
+for target in "${TARGETS[@]}"; do
+  mkdir -p "$target"
+  for dir in "$SCRIPT_DIR"/*/; do
+    name="$(basename "$dir")"
+    [[ "$name" == .* ]] && continue
+    ln -sfn "$dir" "$target/$name"
+    echo "  → $target/$name"
+  done
 done
+
+echo "Done."
