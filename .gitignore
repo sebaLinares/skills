@@ -4,6 +4,7 @@
 # Always track these root files
 !.gitignore
 !CLAUDE.md
+!install.sh
 
 # Published skills (add two lines per new skill)
 !init-docs/
