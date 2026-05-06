@@ -4,7 +4,10 @@
 # Always track these root files
 !.gitignore
 !CLAUDE.md
+!AGENTS.md
 !install.sh
+!.github/
+!.github/copilot-instructions.md
 
 # Published skills (add two lines per new skill)
 !init-docs/
