@@ -75,7 +75,8 @@ and directory the skill would write:
   `processes/`, `references/`, `tickets/`.
 - Templates: `docs/analysis/_template.md`, `docs/exec-plans/_template.md`.
 - Seeded docs: `docs/processes/harness.md`, `docs/processes/dev-setup.md`,
-  `docs/decisions/001-harness-design.md`, `docs/references/README.md`,
+  `docs/decisions/001-harness-design.md`,
+  `docs/decisions/002-session-exit.md`, `docs/references/README.md`,
   `docs/generated/README.md`.
 
 First, read `.harness-version` at the repo root if it exists. This
@@ -252,6 +253,11 @@ the plan-format reference to `PLANS.md`, the agent-entry-point note
 about `AGENTS.md` + symlink, and the steering-loop cadence are reusable
 across any project and stay verbatim.
 
+## Step 13a — Seed ADR 002
+
+Copy `assets/002-session-exit.md` to
+`docs/decisions/002-session-exit.md`. No placeholders.
+
 ## Step 14 — Write `docs/README.md`
 
 Copy `assets/docs-README.md` to `docs/README.md`. Two substitutions:
@@ -360,7 +366,8 @@ List every file and directory created or skipped. Use four sections:
 - **Created** — new files, with paths. Include `.harness-version`
   with its value. Note `docs/FEATURES.md` as an empty ledger by design
   (rows are added during phase 1 of the first brief — *not* a
-  needs-filling file).
+  needs-filling file). List ADR 002 at
+  `docs/decisions/002-session-exit.md`.
 - **Skipped (already existed)** — existing files not touched.
 - **Needs filling** — files written with placeholder content the user
   must resolve. At minimum: `ARCHITECTURE.md`, `SECURITY.md`,

@@ -9,7 +9,7 @@ A coarse user-observable capability of the product, paired with a verification c
 _Avoid_: test, behavior, story, requirement (each names only one facet)
 
 **Feature state**:
-One of `not_started / active / blocked / failing / passing`. Writers are partitioned: humans set `not_started` (on creation) and `blocked` (with a one-line reason); plan-approval flow sets `active`; the verifier loop alone sets `passing` and `failing`. `passing → failing` is a regression; there is no transition back to `not_started`.
+One of `not_started / active / blocked / failing / passing`. Writers are partitioned: humans set `not_started` (on creation) and `blocked` (with a one-line reason); plan-approval flow sets `active`; the verifier loop alone sets `passing` and `failing`. **Session exit** triggers a verifier run as part of its checklist — the verifier still writes the state, but session exit is one of its callers (alongside CI, watch mode, manual invocation). `passing → failing` is a regression; there is no transition back to `not_started`.
 
 **Verification (`verify:` / `verify-cmd:`)**:
 Every **Feature** declares how it is checked at creation time. `verify:` holds a tag selector (e.g. `feat:checkout`) interpreted by a stack-specific convention documented in `dev-setup.md` ("how this repo runs its test command with a tag filter"). `verify-cmd:` is the escape hatch — a literal shell string — used only when the tagged-test convention does not apply. Exactly one of the two is required; presence is non-negotiable even for `not_started` features.
@@ -31,6 +31,9 @@ The repo-wide ledger of **Features**, stored as `docs/FEATURES.md`. Markdown sec
 **Session**:
 One agent conversation, bounded by the user opening and closing the chat (or compaction). May contain zero, one, or many **ExecPlans**, or pure investigation with none. Distinct from a plan: Phase 6 closes a plan; **Session exit** closes a session. The two concepts overlap only when the session contains exactly one plan that finishes inside it.
 _Avoid_: "run", "task" (each names a sub-unit, not the conversation envelope).
+
+**Session exit**:
+The clock-out half of the harness's symmetry with **Session bootstrap**. A six-dimension checklist run on explicit user signal ("we're done", "ttyl", "/session-exit"): build / verifier / plan state / doc coherence / startup viable / chat-knowledge sweep. Auto-fixes the mechanical, surfaces judgment items, blocks-with-flag on build-red or verifier regression. Output lands in existing artifacts (Progress sections, `docs/README.md` index, FEATURES.md, tech-debt-tracker, ADR drafts) — no dedicated session log. Triggers a verifier run; pre-existing failures are reported but not blocking, regressions are blocking. Cannot be mechanically enforced — the harness names the convention and makes it the easiest path.
 
 ## Flagged ambiguities
 

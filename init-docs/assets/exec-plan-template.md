@@ -28,6 +28,7 @@ Avoid internal jargon; write as if the reader is new to this repo.
 The only section where a checklist is mandatory. Use timestamps so rates
 of progress are visible. At every stopping point, update this list; if a
 task is partially done, split it into done / remaining.
+On session exit, this section must reflect reality.
 
 - [ ] (YYYY-MM-DD HH:MMZ) <granular step>
 

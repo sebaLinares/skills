@@ -20,6 +20,59 @@ one entry at a time.
 
 ---
 
+## 2026-05-19 — Session exit checklist
+
+**What:** Adds Session exit as the explicit clock-out half of session
+bootstrap. The new checklist has six dimensions: build, verifier, plan
+state, doc coherence, startup viable, and chat-sweep. It runs only on
+explicit user signals such as "we're done", "ttyl", "close out",
+"session exit", or "/quit"; it routes orphan chat knowledge into
+existing artifacts instead of creating a session log. Adds ADR 002,
+threads a FEATURES.md baseline read into `AGENTS.md` bootstrap, adds a
+Working relationship trigger bullet, and marks ExecPlan Progress as the
+place that must reflect reality on exit.
+
+**Files touched:** `assets/harness.md`, `assets/AGENTS.md`,
+`assets/exec-plan-template.md`, `assets/docs-README.md`,
+`assets/002-session-exit.md` (new), `SKILL.md`.
+
+**How to apply:**
+
+1. In the target repo's `docs/processes/harness.md`, check for a
+   `## Session exit` heading. If absent, insert the section between
+   `## Phase gates — quick reference` and `## Where artifacts live`
+   with the contents from
+   `~/.claude/skills/init-docs/assets/harness.md`.
+2. In the target repo's `AGENTS.md`, check for the trigger-recognition
+   bullet under "Working relationship". If absent, append it. Check
+   for the `docs/FEATURES.md` read step in Session bootstrap that
+   records the `Passing` baseline for session exit. If absent, insert
+   it.
+3. In the target repo's `docs/exec-plans/_template.md`, check the
+   Progress section for the session-exit cross-reference. If absent,
+   append it.
+4. Check for `docs/decisions/002-session-exit.md`. If absent, copy it
+   from `~/.claude/skills/init-docs/assets/002-session-exit.md`.
+5. In the target repo's `docs/README.md`, check the Decisions section
+   for `002-session-exit.md`. If absent, append the ADR 002 catalog
+   entry from `~/.claude/skills/init-docs/assets/docs-README.md`.
+
+**Stack-specific notes:** None. The checklist resolves build, startup,
+and verifier commands through each repo's `docs/processes/dev-setup.md`
+and existing `verify-cmd:` / `verify:` convention.
+
+**Additive/replacing:** additive — one new ADR, one new operating-manual
+section, one new bootstrap baseline step, one Working relationship
+bullet, one ExecPlan Progress sentence, and one catalog entry.
+
+**Conflict risk:** low. Surfaces: a target repo that has renamed
+`## Phase gates — quick reference`, `## Where artifacts live`,
+`## Session bootstrap`, `## Working relationship`, `## Progress`, or
+`## Decisions`. In any such case the audit agent should pause and ask
+rather than insert blindly.
+
+---
+
 ## 2026-05-18 — Feature ledger as first-class artifact
 
 **What:** Adds `docs/FEATURES.md` as the repo-wide scope surface — every

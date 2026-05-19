@@ -222,6 +222,75 @@ with no architectural implication), say so explicitly in the analysis doc
 
 ---
 
+## Session exit
+
+Session exit is the clock-out half of session bootstrap. It cannot be
+mechanically enforced because it depends on the user ending a conversation, but
+the harness names the convention and makes it the easiest path: when a session
+ends, the agent checks the repo can be picked up cleanly by the next agent.
+
+Run session exit only on an explicit user signal, including: "session exit",
+"close out", "we're done", "we are done", "that's it for today", "running
+session exit", "run the exit checklist", "I'm closing the chat", "I'm out",
+"ttyl", or "/quit".
+
+The checklist has six dimensions:
+
+1. **Build** — If code was touched, using `git status` plus working memory,
+   run the build command documented in `docs/processes/dev-setup.md`.
+   Auto-fix mechanical issues by re-running the documented command after
+   straightforward cleanup. Red builds block with flag.
+2. **Verifier** — Run the project's verifier, resolved from `verify-cmd:` or
+   `verify:` via `docs/processes/dev-setup.md`. Compare against the
+   `docs/FEATURES.md` state observed during session bootstrap. A
+   `Passing` -> `Failing` regression blocks with flag; pre-existing reds are
+   reported without blocking.
+3. **Plan state** — Every active plan touched this session has Progress
+   reflecting reality. If a step is partially done, split it into done and
+   remaining items. Auto-fix by editing the plan. Ambiguous progress is
+   surfaced.
+4. **Doc coherence** — Every new or edited artifact is indexed in
+   `docs/README.md` with tags, and no docs are orphaned. Auto-fix missing
+   catalog entries. Ambiguous tag choices are surfaced.
+5. **Startup viable** — If startup-affecting code was touched, confirm the
+   startup commands described in `docs/processes/dev-setup.md` still bring the
+   project up. Auto-fix stale command text when the correct command is known.
+   Red startup blocks with flag.
+6. **Chat-sweep** — Sweep the conversation for knowledge that exists only in
+   chat and route it into existing artifacts using the questionnaire below.
+
+Chat-sweep questionnaire:
+
+| Question | Destination |
+|---|---|
+| Were any options rejected that future work should not reopen? | Decision Log in the active plan, or a new `docs/analysis/` doc if no plan exists |
+| Were there surprises, insights, or discoveries? | Surprises & Discoveries in the active plan, or `docs/tech-debt-tracker.md` |
+| Is there followup work outside the current plan? | `docs/tech-debt-tracker.md` |
+| Did a cross-plan principle emerge? | ADR draft in `docs/decisions/_drafts/` |
+| Is there an external person, deadline, or commitment to track? | `docs/tech-debt-tracker.md`, or plan Context if plan-scoped |
+
+Block with this exact prompt when build, verifier regression, or startup cannot
+be made green before exit:
+
+    BLOCKED on <dim>. Continue anyway? [y/N]
+
+Example transcript:
+
+    Session exit
+    - Build: passed (`npm test`)
+    - Verifier: no regression; pre-existing `feat-004` remains Failing
+    - Plan state: updated `docs/exec-plans/active/2026-05-19_ABC_widget.md`
+    - Doc coherence: indexed 2 edited docs in `docs/README.md`
+    - Startup viable: not applicable; no startup-affecting code touched
+    - Chat-sweep:
+      - Rejected options: recorded in plan Decision Log
+      - Surprises: none
+      - Followups: added TD-018
+      - Cross-plan principles: none
+      - External commitments: none
+
+---
+
 ## Where artifacts live
 
 | Artifact | Path | Naming |

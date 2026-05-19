@@ -58,8 +58,10 @@ substantive output:
 2. Read `docs/README.md` — catalog and tag vocabulary.
 3. Scan `docs/exec-plans/active/` — what is in flight.
 4. Scan `docs/decisions/` — what is already decided.
-5. Read only the docs whose tags match the current task.
-6. **Harness-version check.** Read `.harness-version` at the repo
+5. Note which Features in `docs/FEATURES.md` are `Passing` as the
+   baseline for the session-exit verifier dimension.
+6. Read only the docs whose tags match the current task.
+7. **Harness-version check.** Read `.harness-version` at the repo
    root (single-line ISO date). If the file is present, compare its
    value to the most recent `## YYYY-MM-DD` heading in
    `~/.claude/skills/init-docs/CHANGELOG.md`. If the marker is
@@ -129,3 +131,6 @@ ADR format: see appendix in [`docs/processes/harness.md`](docs/processes/harness
 - Be critical; challenge reasoning.
 - Don't include timeline estimates in plans.
 - Don't add yourself as a co-author to git commits.
+- On user signals "we're done", "ttyl", "close out", or similar, run
+  the Session-exit checklist (see `docs/processes/harness.md` §
+  Session exit) before responding.
