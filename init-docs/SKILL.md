@@ -69,7 +69,7 @@ Before creating anything, inspect the project root. List every file
 and directory the skill would write:
 
 - Repo root: `AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `SECURITY.md`.
-- `docs/`: `README.md`, `PLANS.md`, `tech-debt-tracker.md`.
+- `docs/`: `README.md`, `PLANS.md`, `FEATURES.md`, `tech-debt-tracker.md`.
 - `docs/` subfolders: `analysis/`, `architecture/`, `decisions/`,
   `exec-plans/active/`, `exec-plans/completed/`, `generated/`,
   `processes/`, `references/`, `tickets/`.
@@ -199,7 +199,7 @@ steering loop, and an ADR format appendix that `AGENTS.md` points at.
 Copy `assets/dev-setup.md` to `docs/processes/dev-setup.md`. This file
 is a language-agnostic skeleton — every section is a placeholder the
 user must fill in with stack-specific commands (toolchain, pre-commit
-hook, common commands, start command). Flag it in the Step 16 report
+hook, common commands, start command). Flag it in the Step 18 report
 as "needs filling".
 
 ## Step 9 — Write the references convention
@@ -223,7 +223,16 @@ Copy `assets/tech-debt-tracker.md` to `docs/tech-debt-tracker.md`.
 Empty ledger with the severity + status legend. New entries go at the
 top of the relevant section.
 
-## Step 12 — Seed ADR 001
+## Step 12 — Write the feature ledger
+
+Copy `assets/FEATURES.md` to `docs/FEATURES.md`. Empty ledger with the
+state legend, verify-convention legend, and a pointer to
+`docs/PLANS.md` for the `features:` frontmatter contract that ExecPlans
+must satisfy. Rows are added by the user or the agent during phase 1 of
+the first relevant brief — not during scaffolding. Empty is the correct
+initial state.
+
+## Step 13 — Seed ADR 001
 
 Copy `assets/001-harness-design.md` to
 `docs/decisions/001-harness-design.md`. Two placeholders need filling:
@@ -231,7 +240,7 @@ Copy `assets/001-harness-design.md` to
 - `{{PROJECT_CONTEXT}}` — one paragraph describing the project: team
   size, what the repo does, how AI is being used today. If this isn't
   known from the brief, leave the placeholder verbatim and flag it in
-  the Step 16 report so the user can fill it in.
+  the Step 18 report so the user can fill it in.
 - `{{V1_CONTENTS}}` — project-specific list of what ships in v1. The
   template provides a generic starter list (including `docs/PLANS.md`
   as item 7 and `AGENTS.md` in item 5). Adjust the language/tooling
@@ -243,7 +252,7 @@ the plan-format reference to `PLANS.md`, the agent-entry-point note
 about `AGENTS.md` + symlink, and the steering-loop cadence are reusable
 across any project and stay verbatim.
 
-## Step 13 — Write `docs/README.md`
+## Step 14 — Write `docs/README.md`
 
 Copy `assets/docs-README.md` to `docs/README.md`. Two substitutions:
 
@@ -258,12 +267,12 @@ The catalog already has sections for Repo-root anchors, Generated, and
 Tech debt populated with links to the files written in earlier steps.
 
 If `docs/README.md` already exists and the user chose "upgrade" or
-"skip", leave it alone and emit a note in the Step 16 report pointing
+"skip", leave it alone and emit a note in the Step 18 report pointing
 out which sections (Repo-root anchors, Exec plans, Generated, Tech
 debt) need to be added manually. Show the user the exact lines to
 append.
 
-## Step 14 — Write `AGENTS.md` and create the `CLAUDE.md` symlink
+## Step 15 — Write `AGENTS.md` and create the `CLAUDE.md` symlink
 
 Copy `assets/AGENTS.md` to the project root. The file is generic and
 does not require substitution.
@@ -275,17 +284,17 @@ ln -s AGENTS.md CLAUDE.md
 ```
 
 On Windows / non-symlink filesystems where `ln` fails, fall back to
-copying `AGENTS.md` to `CLAUDE.md` and emit a warning in the Step 16
+copying `AGENTS.md` to `CLAUDE.md` and emit a warning in the Step 18
 report: "symlink not supported on this filesystem; `CLAUDE.md` copied
 instead — keep the two files in sync manually, or re-run on a
 Unix-like filesystem".
 
 If either file already exists and the user chose "upgrade" or "skip",
-leave it alone and emit a diff in the Step 16 report showing what the
+leave it alone and emit a diff in the Step 18 report showing what the
 harness expects — operating principle, session bootstrap, phase gates,
 output-routing table — so the user can merge it manually.
 
-## Step 15 — Write `ARCHITECTURE.md` and `SECURITY.md`
+## Step 16 — Write `ARCHITECTURE.md` and `SECURITY.md`
 
 Copy `assets/ARCHITECTURE.md` and `assets/SECURITY.md` to the project
 root. Both are language-agnostic skeletons — every section is a
@@ -293,9 +302,9 @@ prompt ("*Fill in …*") the user must resolve. Do not try to pre-fill
 from code scanning; the point of these files is forcing the user to
 capture context that only they know.
 
-Flag both files in the Step 16 report as "needs filling".
+Flag both files in the Step 18 report as "needs filling".
 
-## Step 16 — Write `.harness-version`
+## Step 17 — Write `.harness-version`
 
 Write a single line to `.harness-version` at the repo root. The value
 is the date of the most recent entry in this skill's `CHANGELOG.md`
@@ -344,17 +353,20 @@ and older than the changelog head.
 **Never** auto-apply "replacing" entries, never merge conflicts
 autonomously, never silently skip steps.
 
-## Step 17 — Report what was created
+## Step 18 — Report what was created
 
 List every file and directory created or skipped. Use four sections:
 
 - **Created** — new files, with paths. Include `.harness-version`
-  with its value.
+  with its value. Note `docs/FEATURES.md` as an empty ledger by design
+  (rows are added during phase 1 of the first brief — *not* a
+  needs-filling file).
 - **Skipped (already existed)** — existing files not touched.
 - **Needs filling** — files written with placeholder content the user
   must resolve. At minimum: `ARCHITECTURE.md`, `SECURITY.md`,
-  `docs/processes/dev-setup.md`, and any `{{PLACEHOLDER}}` remaining
-  in ADR 001.
+  `docs/processes/dev-setup.md` (including its new "Feature
+  verification convention" section), and any `{{PLACEHOLDER}}`
+  remaining in ADR 001.
 - **Needs manual merge** — only if the user chose "upgrade" or "skip"
   and a pre-existing file would have been updated. Show the exact
   content to merge.
@@ -366,7 +378,7 @@ value.
 If tags were inferred from the project (Step 2), briefly explain the
 signals used so the user can correct wrong inferences.
 
-If the `CLAUDE.md` symlink fell back to a copy (Step 14), call it out.
+If the `CLAUDE.md` symlink fell back to a copy (Step 15), call it out.
 
 ## Notes on scope
 

@@ -35,6 +35,8 @@ Every ExecPlan begins with a YAML frontmatter block. Required fields:
 - `analysis` — repository-relative path to the analysis doc that produced this plan.
 - `adrs` — list of repository-relative paths to ADRs cited by this plan (may be empty).
 - `covers` — list of path prefixes this plan authorises changes to. **Required when `status: approved`.** See below.
+- `features` — list of `feat-NNN` IDs from [`FEATURES.md`](FEATURES.md) that this plan delivers. **Non-optional:** either non-empty (every ID must resolve to a row in `FEATURES.md`) or empty paired with `feature-less-reason`. See below.
+- `feature-less-reason` — one-line string declaring why this plan ships no user-observable behavior. **Required iff `features: []`.** Refactors, infra, dev-experience, and docs-only plans use this escape.
 
 ### The `covers:` field
 
@@ -57,6 +59,40 @@ urgent commits when no completed plan exists, set the
     HARNESS_BYPASS="<reason>" git commit ...
 
 See `docs/processes/dev-setup.md` for the full bypass policy.
+
+### The `features:` field
+
+`features:` is the link between an ExecPlan and the scope surface in
+[`FEATURES.md`](FEATURES.md). The field is non-optional — every plan
+must either list one or more `feat-NNN` IDs or declare itself
+feature-less with `feature-less-reason`.
+
+    features:
+      - feat-007
+      - feat-012
+
+Or, for a plan that ships no user-observable behavior:
+
+    features: []
+    feature-less-reason: pure refactor of HTTP client; no behavioral change
+
+State-machine consequences:
+
+- On approval (`status: approved`), every listed Feature transitions
+  from `Not started` to `Active` in `FEATURES.md`. The plan-approval
+  flow owns this write.
+- On completion (the plan lands in `exec-plans/completed/` with
+  `status: completed`), Feature state is handed off to the verifier
+  loop. The plan **does not** write `Passing` itself — that is the
+  worker/checker split. A plan can be `completed` while its Features
+  sit in `Failing` until the verifier loop confirms.
+- A `features:` entry that does not resolve to a row in `FEATURES.md`
+  makes the plan invalid. The agent must add the Feature row in
+  `FEATURES.md` before approval.
+
+The `features:` field has no interaction with the plan-coverage sensor
+— that sensor reads `covers:` paths only and is unaware of
+`FEATURES.md`.
 
 ## Non-negotiable requirements
 

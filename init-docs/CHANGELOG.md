@@ -20,6 +20,122 @@ one entry at a time.
 
 ---
 
+## 2026-05-18 — Feature ledger as first-class artifact
+
+**What:** Adds `docs/FEATURES.md` as the repo-wide scope surface — every
+user-observable capability paired with a verification reference and one
+of five states (`Not started`, `Active`, `Blocked`, `Failing`,
+`Passing`). Mandates two new ExecPlan frontmatter fields: `features:`
+(non-empty list of `feat-NNN` IDs from `FEATURES.md`) or `features: []`
+paired with `feature-less-reason:`. Prepends a session-bootstrap step
+in `AGENTS.md` ("read FEATURES.md first"), threads sentences into
+`harness.md` phase 1 (draft Feature rows before Problem statement),
+phase 5 (cross-ref to `features:` field), phase 6 (verifier loop owns
+`Passing`/`Failing`), and steering loop (scan `## Failing` section).
+Adds a top-level `## Features` section to the catalog (`docs/README.md`)
+between Repo-root anchors and Architecture. Adds a `## Feature
+verification convention` prompt to `dev-setup.md`. Adds `FEATURES.md`
+as item 8 of the V1 contents in ADR 001. Introduces `#features`
+(domain) and `#ledger` (type) tags; retrofits `tech-debt-tracker` to
+use `#ledger` too. Inserts a new Step 12 in `SKILL.md` and renumbers
+12–17 → 13–18.
+
+**Files touched:** `assets/FEATURES.md` (new), `assets/PLANS.md`,
+`assets/exec-plan-template.md`, `assets/AGENTS.md`, `assets/harness.md`,
+`assets/docs-README.md`, `assets/dev-setup.md`,
+`assets/001-harness-design.md`, `SKILL.md`.
+
+**How to apply:**
+
+1. If `docs/FEATURES.md` is absent in the target repo, copy it from
+   `~/.claude/skills/init-docs/assets/FEATURES.md`. Skip if present.
+2. In the target repo's `docs/PLANS.md`, in the Frontmatter section,
+   if the bullet for `features` does not already exist immediately
+   after the `covers` bullet, append two new bullets describing
+   `features` (non-optional; list of `feat-NNN` IDs or empty paired
+   with `feature-less-reason`) and `feature-less-reason` (required
+   iff `features: []`). Then, if a subsection titled `### The
+   features: field` does not already exist after `### The covers:
+   field`, insert it: YAML example, state-machine consequences
+   (approval → `Active`; completion hands state to verifier loop;
+   plan never writes `Passing` itself), invalid-reference rule
+   (referenced ID missing from `FEATURES.md` → invalid plan),
+   decoupling note from plan-coverage sensor. Source:
+   `~/.claude/skills/init-docs/assets/PLANS.md`.
+3. In the target repo's `docs/exec-plans/_template.md` frontmatter,
+   if `features:` is not listed below `covers: []`, insert two new
+   lines: `features: []  # feat-NNN IDs from docs/FEATURES.md this
+   plan delivers; non-optional (non-empty OR pair with
+   feature-less-reason)` and `feature-less-reason:  # one line;
+   required iff features is empty`. Skip if `features:` already
+   present.
+4. In the target repo's `AGENTS.md` Session bootstrap numbered list,
+   if `docs/FEATURES.md` is not the first item, prepend a new item
+   1 ("Read `docs/FEATURES.md` — the scope surface…") and renumber
+   subsequent items. Skip if step 1 already references FEATURES.md.
+5. In the target repo's `AGENTS.md` "On receiving a task" change-
+   producing branch, if the sub-step about identifying Feature ID(s)
+   before naming the analysis doc is absent, append it. Skip if
+   already present.
+6. In the target repo's `AGENTS.md` "Where to save outputs" table,
+   if no row for `docs/FEATURES.md` exists, insert it directly above
+   the `Tech debt ledger` row: `Feature ledger | docs/FEATURES.md |
+   append rows under the matching state section; single file, not
+   per-instance`. Skip if present.
+7. In the target repo's `docs/processes/harness.md`:
+   - Session bootstrap numbered list: if `../FEATURES.md` is not
+     already item 2, insert it as the new item 2 ("Read
+     `../FEATURES.md` — the scope surface…") and renumber the
+     remaining items.
+   - Phase 1: append the "Before drafting the analysis Problem
+     statement, identify which existing Feature(s) the brief
+     touches…" paragraph if absent. Append the corresponding
+     update to the Phase-1 gate sentence if absent.
+   - Phase 5: append the "Plans declare which Features they cover
+     via the `features:` frontmatter field…" paragraph if absent.
+   - Phase 6: append the "The verifier loop owns Feature state
+     transitions to `Passing` / `Failing`…" paragraph if absent.
+   - Steering loop: append the "Scan the `## Failing` section of
+     `FEATURES.md`…" paragraph if absent.
+   Skip each individually if its content is already present.
+8. In the target repo's `docs/README.md`:
+   - Tag vocabulary table: add `#features` to the Domain column
+     after `#ai-harness`, and `#ledger` to the Type column after
+     `#tech-debt`, if not already present.
+   - If no `## Features` section exists between `## Repo-root
+     anchors` and `## Architecture`, insert one: one-line
+     description plus a single bullet linking to `FEATURES.md` with
+     tags `#ai-harness #features #ledger`. Skip if section exists.
+   - In the existing Tech debt section's entry for
+     `tech-debt-tracker.md`, append `#ledger` to its tag list if
+     absent.
+9. In the target repo's `docs/processes/dev-setup.md`, if no
+   `## Feature verification convention` section exists between
+   `## Common commands` and `## Running locally`, append one with
+   the example tag-filter shapes (`npm test --grep`, `go test -run`,
+   `pytest -k`) and the `verify-cmd:` explanation. Skip if present.
+
+**Stack-specific notes:** None. The skill ships docs-only; the verifier
+loop (the entity that writes `Passing` / `Failing`) is intentionally
+not shipped. Each project supplies its own verifier (a script, a CI
+job, a dedicated skill) however its stack prefers — consistent with
+the existing posture on the plan-coverage sensor (cf. the 2026-04-20
+entry below).
+
+**Additive/replacing:** mostly additive — one new file, new sections,
+new frontmatter fields, new tags. One replacing edit: the tag-
+vocabulary table in `docs/README.md` (table cells are widened, not
+overwritten). One additive retrofit: appending `#ledger` to the
+existing `tech-debt-tracker` entry tags.
+
+**Conflict risk:** low. Surfaces: a target repo that has renamed
+`## Repo-root anchors`, reordered the catalog sections, restructured
+`AGENTS.md` session bootstrap, or removed `## Common commands` from
+`dev-setup.md`. In any such case the audit agent should pause and ask
+rather than insert blindly.
+
+---
+
 ## 2026-05-05 — Auto-commit after plan execution via `/commit` skill
 
 **What:** After the agent closes the plan (moves to `completed/`, sets

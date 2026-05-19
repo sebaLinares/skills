@@ -94,6 +94,7 @@ Claude Code loads the same file.
 5. `AGENTS.md` (with `CLAUDE.md` symlink) — operating principle, phase gates, session bootstrap.
 6. {{language/framework-specific pre-commit hook: lint + static analysis + tests on changed files}}.
 7. [`docs/PLANS.md`](../PLANS.md) — the ExecPlan specification. Load-bearing contract that every plan must satisfy.
+8. [`docs/FEATURES.md`](../FEATURES.md) — the feature ledger; project-wide scope surface paired with verification and state. ExecPlans declare which Features they deliver via the `features:` frontmatter field.
 
 ### What is deferred
 

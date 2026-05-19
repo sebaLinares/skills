@@ -49,6 +49,24 @@ coverage check while leaving other pre-commit checks in place.
 | Lint | `<command>` |
 | Run all checks | `<command>` |
 
+## Feature verification convention
+
+*Fill in:* the exact shell command form that runs this project's test
+runner with a tag filter. Example shapes:
+
+    npm test -- --grep "@feat:<id>"
+    go test -run "Feat<Id>"
+    pytest -k "feat_<id>"
+
+`docs/FEATURES.md` rows in the `verify:` column reference tags using
+this convention. Until this section is filled in, `verify:` tags are
+forward declarations only; they will not actually run.
+
+`verify-cmd:` in `docs/FEATURES.md` is a literal shell string — the
+escape hatch for Features the tagged-test convention does not cover
+(e.g. health endpoints, smoke checks). It is fully decoupled from the
+plan-coverage sensor.
+
 ## Running locally
 
 *Fill in:* environment variables required, how to supply them (`.env`,

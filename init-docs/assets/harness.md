@@ -29,10 +29,13 @@ non-authoritative.
 Every Claude Code session in this repo starts the same way. The agent must:
 
 1. Read `AGENTS.md` (loaded automatically; `CLAUDE.md` is a symlink to it).
-2. Read `docs/README.md` — the catalog, including the tag vocabulary.
-3. Scan `docs/exec-plans/active/` — what is currently in flight.
-4. Scan `docs/decisions/` indexes — what is already decided.
-5. Identify which tags match the current task and read only the docs whose tags
+2. Read [`../FEATURES.md`](../FEATURES.md) — the scope surface. Any task that
+   names or implies a behavior must map to a Feature row (existing or new)
+   before phase 1 produces an analysis doc.
+3. Read `docs/README.md` — the catalog, including the tag vocabulary.
+4. Scan `docs/exec-plans/active/` — what is currently in flight.
+5. Scan `docs/decisions/` indexes — what is already decided.
+6. Identify which tags match the current task and read only the docs whose tags
    match. Skip the rest.
 
 Do not start producing output before the bootstrap is done. If the user's
@@ -67,7 +70,16 @@ The developer's first job is to bring the brief into the repo. That happens as
 the opening section of the analysis doc in phase 2 — the *problem statement*.
 There is no separate brief artifact.
 
-Phase-1 gate: developer can re-state the problem in their own words.
+Before drafting the analysis Problem statement, identify which existing
+Feature(s) the brief touches in [`../FEATURES.md`](../FEATURES.md); if none,
+draft the new Feature row(s) there and reference them by `feat-NNN` ID from
+the Problem statement. Adding a Feature row is the cheapest harness artifact
+— no analysis or ADR required — and it forces scope to be written down before
+investigation begins.
+
+Phase-1 gate: developer can re-state the problem in their own words, and
+every behavior implied by the brief maps to a Feature ID (existing or newly
+added) — or the brief is explicitly feature-less (refactor, infra, dev-ex).
 
 ### Phase 2 — Investigation
 
@@ -132,6 +144,13 @@ Single file per initiative, under `docs/exec-plans/active/`. Plan-scoped
 decisions stay in the plan's Decision Log; architectural decisions are
 promoted to ADRs in `docs/decisions/`.
 
+Plans declare which Features they cover via the `features:` frontmatter
+field (see [`../PLANS.md`](../PLANS.md) → "The `features:` field"). The
+field is non-optional — every plan either lists `feat-NNN` IDs from
+[`../FEATURES.md`](../FEATURES.md) or declares itself feature-less with
+`feature-less-reason:`. On approval, every listed Feature transitions
+from `Not started` to `Active` in `FEATURES.md`.
+
 Phase-5 gate: the lead has read the plan and approved it, and the plan
 satisfies PLANS.md. No code is written before this.
 
@@ -170,6 +189,12 @@ The pre-commit hook validates this: it will reject any commit that
 touches source files unless a plan in `completed/` with
 `status: completed` covers those paths. This is what makes the
 move-then-commit order enforceable.
+
+The verifier loop owns Feature state transitions to `Passing` / `Failing`.
+A plan completing is *not* the same as its Features passing — the plan can
+land in `completed/` with `status: completed` while its Features sit in
+`Failing` until the verifier loop runs and confirms. The agent must never
+write `Passing` itself; that is the worker/checker split.
 
 Phase-6 gate: all steps checked off, tests green, plan in `completed/`
 with `status: completed`.
@@ -243,6 +268,11 @@ time, it is a harness bug.
 **Record the change.** Every steering-loop session produces either a guide
 update (commit) or a sensor addition (commit). If neither, the session didn't
 land.
+
+**Scan the `## Failing` section of [`../FEATURES.md`](../FEATURES.md).** Every
+entry is either a steering-loop input (a regression where a sensor is missing
+or a guide is wrong) or a tech-debt row (an acknowledged hazard). Empty
+`## Failing` is the target state.
 
 ---
 

@@ -25,6 +25,10 @@ code in that first response. Three categories:
    first response must name the analysis doc you will draft under
    `docs/analysis/` before touching source. Do not read code beyond
    what is needed to draft the analysis. Do not open the editor.
+   Before naming the analysis doc, identify the affected Feature
+   ID(s) in [`docs/FEATURES.md`](docs/FEATURES.md) — or declare the
+   work feature-less with a one-line reason (`feature-less-reason:`
+   in the eventual plan's frontmatter).
 2. **Investigation-only** — the user is asking a question, requesting
    an audit, or exploring a decision. No code changes expected. Skip
    the harness; read and report. If the investigation uncovers work
@@ -48,11 +52,14 @@ investigation-only, ask.
 For change-producing and investigation-only tasks, before producing any
 substantive output:
 
-1. Read `docs/README.md` — catalog and tag vocabulary.
-2. Scan `docs/exec-plans/active/` — what is in flight.
-3. Scan `docs/decisions/` — what is already decided.
-4. Read only the docs whose tags match the current task.
-5. **Harness-version check.** Read `.harness-version` at the repo
+1. Read [`docs/FEATURES.md`](docs/FEATURES.md) — the scope surface. Any
+   task that names or implies a behavior must map to a Feature row
+   (existing or new) before phase 1 can produce an analysis doc.
+2. Read `docs/README.md` — catalog and tag vocabulary.
+3. Scan `docs/exec-plans/active/` — what is in flight.
+4. Scan `docs/decisions/` — what is already decided.
+5. Read only the docs whose tags match the current task.
+6. **Harness-version check.** Read `.harness-version` at the repo
    root (single-line ISO date). If the file is present, compare its
    value to the most recent `## YYYY-MM-DD` heading in
    `~/.claude/skills/init-docs/CHANGELOG.md`. If the marker is
@@ -106,6 +113,7 @@ complying. Do not silently comply.
 | Request flows, component docs, diagrams | `docs/architecture/` | `<slug>.md` or `<slug>.drawio` |
 | External specs, legacy behaviour snapshots | `docs/references/` | `<name>-llms.txt` |
 | Machine-generated artifacts | `docs/generated/<subfolder>/` | per-subfolder; see `docs/generated/README.md` |
+| Feature ledger | `docs/FEATURES.md` | append rows under the matching state section; single file, not per-instance |
 | Tech debt ledger | `docs/tech-debt-tracker.md` | append-only; new rows at top of relevant section |
 | AI-generated ticket drafts | `docs/tickets/` | `YYYY-MM-DD_<ID>_<slug>.md` |
 

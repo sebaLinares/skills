@@ -20,8 +20,8 @@ match the task at hand. Skip the rest.
 
 | Domain | Type |
 |---|---|
-| DOMAIN_TAGS `#ai-harness` | `#request-flow` `#api-contract` `#data-model` `#transformation` `#diagram` |
-| EXTERNAL_TAGS | `#gap-analysis` `#research` `#adr` `#guideline` `#ticket` `#plan` `#architecture` `#security` `#tech-debt` |
+| DOMAIN_TAGS `#ai-harness` `#features` | `#request-flow` `#api-contract` `#data-model` `#transformation` `#diagram` |
+| EXTERNAL_TAGS | `#gap-analysis` `#research` `#adr` `#guideline` `#ticket` `#plan` `#architecture` `#security` `#tech-debt` `#ledger` |
 
 Add new tags freely — keep them lowercase, hyphenated, specific.
 
@@ -33,6 +33,11 @@ Top-level docs that live at the repo root, not under `docs/`. Linked here for di
 - [`/AGENTS.md`](../AGENTS.md) — agent map; entry point for any coding agent. `CLAUDE.md` is a symlink to it `#ai-harness` `#guideline`
 - [`/ARCHITECTURE.md`](../ARCHITECTURE.md) — code map: module shape, dependency direction, business domains, bootstrap, hotspots `#architecture` `#guideline`
 - [`/SECURITY.md`](../SECURITY.md) — security posture: reporting, dependency scanning, secrets, auth, threat model `#security` `#guideline`
+
+## Features
+Repo-wide scope surface — every user-observable capability with its verification command and current state. Read before the catalog sections below when entering the repo: it tells you what the product does.
+
+- [FEATURES.md — feature ledger](FEATURES.md) — what this product is supposed to do, with verification and state `#ai-harness` `#features` `#ledger`
 
 ## Architecture
 System internals: request flows, data transformations, API contracts, diagrams. For the repo-wide map, see [`/ARCHITECTURE.md`](../ARCHITECTURE.md).
@@ -80,7 +85,7 @@ Machine-generated artifacts. Not hand-edited.
 ## Tech debt
 Running ledger of known hazards, shortcuts, and deferred improvements.
 
-- [Tech debt tracker](tech-debt-tracker.md) — severity + status legend; open and resolved items `#tech-debt` `#ai-harness`
+- [Tech debt tracker](tech-debt-tracker.md) — severity + status legend; open and resolved items `#tech-debt` `#ai-harness` `#ledger`
 
 ## Tickets
 AI-generated ticket drafts.
