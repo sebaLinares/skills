@@ -67,6 +67,35 @@ escape hatch for Features the tagged-test convention does not cover
 (e.g. health endpoints, smoke checks). It is fully decoupled from the
 plan-coverage sensor.
 
+## Evaluator convention
+
+*Fill in:* the exact shell command that invokes this project's
+**Evaluator** with a plan path. Universal shape:
+
+    <evaluator-cmd> <plan-path>
+
+`evaluator-cmd:` (literal): _________________________________________
+
+*Independence assertion (single line):* confirm that this command
+runs in a context that does **not** share state with the worker's
+session — for example a fresh subagent, a separate CLI agent, or a
+human reviewer. Independence is the load-bearing property; same
+agent, same session, same context does not qualify.
+
+_________________________________________________________________
+
+The Evaluator gates the `active/` → `completed/` transition for
+every ExecPlan. It reads the plan plus the working tree it references
+and writes a verdict block into the plan's `## Evaluator transcript`
+section (Alignment, Acceptance, optionally Quality). The worker that
+produced the plan never edits that section — independence is
+structural, not convention-only. See ADR 003 and `docs/PLANS.md` →
+"The `Evaluator transcript` section" for the full contract.
+
+Until this section is filled in, every plan must be evaluated by a
+human reviewer in a separate session and the verdict recorded by that
+reviewer in the transcript section. The worker cannot self-grade.
+
 ## Running locally
 
 *Fill in:* environment variables required, how to supply them (`.env`,

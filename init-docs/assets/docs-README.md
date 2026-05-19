@@ -54,6 +54,7 @@ Architecture Decision Records (ADRs). Explain *why* the system is the way it is.
 
 - [001 — Harness Engineering for AI Agent Usage](decisions/001-harness-design.md) — guides + sensors, phase gates, plans as first-class artifacts `#ai-harness` `#adr`
 - [002 — Session exit closes the bootstrap asymmetry](decisions/002-session-exit.md) — explicit session close-out checklist and chat-sweep routing `#ai-harness` `#adr`
+- [003 — Evaluator gate at plan completion](decisions/003-evaluator-gate.md) — independent evaluator pass before `active/` → `completed/`; worker/checker split for plan closure `#ai-harness` `#adr`
 
 ## Exec plans
 Active and completed initiative plans. First-class artifacts — reviewed before any code is written. Plan-scoped decisions live inline; architectural decisions escalate to ADRs.

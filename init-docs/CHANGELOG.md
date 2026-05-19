@@ -20,6 +20,91 @@ one entry at a time.
 
 ---
 
+## 2026-05-20 — Evaluator gate at plan completion
+
+**What:** Adds an independent **Evaluator** pass as the gate between
+`docs/exec-plans/active/` and `docs/exec-plans/completed/`. The
+Evaluator is a coding agent or tool that does not share state with the
+plan's worker — fresh subagent, separate session, external CLI agent,
+or human reviewer. Universal invocation contract `<evaluator-cmd>
+<plan-path>`; the consuming repo declares the concrete command in
+`docs/processes/dev-setup.md` § Evaluator convention. The Evaluator
+writes verdicts (Alignment + Acceptance required, Quality optional)
+into a new `## Evaluator transcript` section in the plan file itself;
+the worker never edits that section. Retries append new timestamped
+blocks. Closes the worker/checker split named in CONTEXT.md by adding
+its second concrete enforcer (the first being the verifier loop from
+ADR 002).
+
+**Files touched:** `assets/PLANS.md`, `assets/harness.md`,
+`assets/exec-plan-template.md`, `assets/AGENTS.md`,
+`assets/dev-setup.md`, `assets/docs-README.md`,
+`assets/003-evaluator-gate.md` (new), `SKILL.md`, `CONTEXT.md`.
+
+**How to apply:**
+
+1. In the target repo's `docs/PLANS.md`, check the Required sections
+   list for an "Evaluator transcript" entry. If absent, insert the
+   bullet between "Artifacts and Notes" and "Interfaces and
+   Dependencies", and append the new "The `Evaluator transcript`
+   section" subsection at the end of the `features:` block (above
+   "Non-negotiable requirements"), using the contents from
+   `~/.claude/skills/init-docs/assets/PLANS.md`.
+2. In the target repo's `docs/processes/harness.md`, check Phase 6
+   for an "Evaluator" reference. If absent, insert the new pre-move
+   paragraph immediately before "On completion, the **agent** moves
+   the plan file…" with the contents from
+   `~/.claude/skills/init-docs/assets/harness.md`. Update the Phase-6
+   gate line to require an Evaluator transcript with latest Alignment
+   + Acceptance both `pass`.
+3. In the target repo's `docs/exec-plans/_template.md`, check for a
+   `## Evaluator transcript` section. If absent, insert it between
+   "Artifacts and Notes" and "Interfaces and Dependencies" with the
+   stub from `~/.claude/skills/init-docs/assets/exec-plan-template.md`.
+4. In the target repo's `AGENTS.md`, check the Phase gates list for
+   the Evaluator bullet. If absent, append it with the contents from
+   `~/.claude/skills/init-docs/assets/AGENTS.md`.
+5. In the target repo's `docs/processes/dev-setup.md`, check for an
+   "Evaluator convention" heading. If absent, insert the section
+   between "Feature verification convention" and "Running locally"
+   with the contents from `~/.claude/skills/init-docs/assets/dev-setup.md`.
+   Flag the section for filling.
+6. Check the target repo's `docs/decisions/` for any ADR titled
+   "Evaluator gate at plan completion" (any number). If absent, find
+   the next available `NNN` — default `003` if free, otherwise the
+   next free number — and copy
+   `~/.claude/skills/init-docs/assets/003-evaluator-gate.md` to
+   `docs/decisions/NNN-evaluator-gate.md`. If `NNN ≠ 003`, also
+   rewrite the cross-references inside the copied file (the heading
+   `# ADR 003 — …` and any in-body `ADR 003` mentions) to the chosen
+   number.
+7. In the target repo's `docs/README.md`, check the Decisions section
+   for the new ADR. If absent, append the catalog entry from
+   `~/.claude/skills/init-docs/assets/docs-README.md`, rewriting the
+   number and link if step 6 chose `NNN ≠ 003`.
+
+**Stack-specific notes:** None. The Evaluator command itself is
+stack-specific and is captured in each repo's
+`docs/processes/dev-setup.md` § Evaluator convention; the skill does
+not impose a default. Until the section is filled, the convention is
+"a human reviewer in a separate session writes the transcript."
+
+**Additive/replacing:** additive — one new ADR, one new PLANS.md
+required section + subsection, one new harness.md Phase-6 paragraph,
+one new exec-plan-template stub, one new AGENTS.md phase-gate bullet,
+one new dev-setup.md section, and one new catalog entry.
+
+**Conflict risk:** medium. Surfaces: a target repo that has renamed
+`## Required sections`, `## Phase gates`, the Phase 6 "On completion"
+sentence, `## Artifacts and Notes`, `## Feature verification
+convention`, or `## Decisions` (catalog). The ADR-numbering branch in
+step 6 is also a real surface — repos that already have an ADR 003
+(e.g. plan-coverage sensor reference implementations) get the next
+free number and a rewrite pass. In any conflict, the audit agent
+should pause and ask rather than insert blindly.
+
+---
+
 ## 2026-05-19 — Session exit checklist
 
 **What:** Adds Session exit as the explicit clock-out half of session

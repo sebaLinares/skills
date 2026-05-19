@@ -11,6 +11,24 @@ _Avoid_: test, behavior, story, requirement (each names only one facet)
 **Feature state**:
 One of `not_started / active / blocked / failing / passing`. Writers are partitioned: humans set `not_started` (on creation) and `blocked` (with a one-line reason); plan-approval flow sets `active`; the verifier loop alone sets `passing` and `failing`. **Session exit** triggers a verifier run as part of its checklist — the verifier still writes the state, but session exit is one of its callers (alongside CI, watch mode, manual invocation). `passing → failing` is a regression; there is no transition back to `not_started`.
 
+**Worker/checker split**:
+The principle that no agent certifies its own work. A *worker* is the agent that produces an artifact (a plan, a feature state, code); a *checker* is whoever or whatever certifies it as done. The two roles must be distinguishable in the harness — either different sessions, different skills, or a deterministic tool. The harness has two concrete enforcers today: (1) the verifier loop owns FEATURES.md `passing` writes (ADR 002); (2) the **Evaluator** owns the `active/` → `completed/` transition for ExecPlans. Future enforcers must declare which side they sit on.
+
+**Evaluator**:
+The checker for ExecPlan completion. A role played by any coding agent or tool that does not share state with the plan's worker (fresh subagent, separate session, external CLI agent like Codex, human reviewer). The harness names the role and the artifact it must produce — an **Evaluator transcript** — but the consuming repo names the concrete tool in `dev-setup.md` next to the verifier convention. Independence is the load-bearing property: same agent, same session, same context does not qualify.
+_Avoid_: "reviewer" (overloaded with human PR review), "judge" (overloaded with LLM-as-judge benchmarking).
+
+**Evaluator invocation contract**:
+Universal shape `<evaluator-cmd> <plan-path>`. The Evaluator reads the plan plus the working tree it references, then writes its verdicts into a dedicated **Evaluator transcript** section *inside the plan file itself*. The worker that produced the plan never edits that section — independence is structural (different writer, different context), not convention-only. The worker then reads the section it didn't write, parses verdicts, and decides whether to move the plan to `completed/`. Pattern is analogous to the existing `verify-cmd:` / `verify:` contract for Features.
+
+**Evaluator scope**:
+What the Evaluator certifies. Two required verdicts and one optional:
+1. **Alignment** (required) — the diff implements what the plan's Plan-of-Work and Concrete Steps said it would. Catches scope drift and silent omissions.
+2. **Acceptance** (required) — the plan's Validation & Acceptance criteria were actually verified, with evidence (test transcripts, observable outputs).
+3. **Quality** (optional) — code-quality review, on by default for plans tagged `security`/`auth`/`payments`-adjacent or whenever the consuming repo configures it. A failing quality verdict is *not* a completion blocker by itself; it routes to `docs/tech-debt-tracker.md`.
+
+Code-quality review at large is the maintainability harness's job (linters, `/review`); folding it into the completion gate would conflate two sensors and block plan closure on style misses.
+
 **Verification (`verify:` / `verify-cmd:`)**:
 Every **Feature** declares how it is checked at creation time. `verify:` holds a tag selector (e.g. `feat:checkout`) interpreted by a stack-specific convention documented in `dev-setup.md` ("how this repo runs its test command with a tag filter"). `verify-cmd:` is the escape hatch — a literal shell string — used only when the tagged-test convention does not apply. Exactly one of the two is required; presence is non-negotiable even for `not_started` features.
 

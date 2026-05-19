@@ -177,7 +177,23 @@ The developer executes the plan step by step. Rules:
 - Any decision made during execution is recorded in the decision log with
   timestamp and reasoning.
 
-On completion, the **agent** moves the plan file from
+Before moving the plan to `completed/`, invoke the project's
+**Evaluator** with the plan path — see
+[`dev-setup.md`](dev-setup.md) § Evaluator convention for the concrete
+command (universal shape `<evaluator-cmd> <plan-path>`). The Evaluator
+runs in a context that does not share state with this session and
+writes a verdict block into the plan's `## Evaluator transcript`
+section; this is the worker/checker split applied to plan completion
+(see [ADR 003](../decisions/003-evaluator-gate.md)). The agent does
+**not** edit that section.
+
+Read the latest block. If Alignment and Acceptance are both `pass`,
+proceed. If either is `fail`, the plan stays in `active/` — log the
+failure in the Decision Log, address it, and re-invoke the Evaluator.
+A failing Quality verdict is advisory only; route it to
+`docs/tech-debt-tracker.md` and continue.
+
+On a passing transcript, the **agent** moves the plan file from
 `docs/exec-plans/active/` to `docs/exec-plans/completed/` and sets
 `status: completed` in the frontmatter. The agent then commits automatically — no prompt required. If the
 `/commit` skill is available, invoke it; otherwise stage all changes,
@@ -196,8 +212,9 @@ land in `completed/` with `status: completed` while its Features sit in
 `Failing` until the verifier loop runs and confirms. The agent must never
 write `Passing` itself; that is the worker/checker split.
 
-Phase-6 gate: all steps checked off, tests green, plan in `completed/`
-with `status: completed`.
+Phase-6 gate: all steps checked off, tests green, Evaluator transcript
+present with latest Alignment + Acceptance both `pass`, plan in
+`completed/` with `status: completed`.
 
 > **Note:** PR-per-plan is deferred to the backlog pending CI pipeline
 > improvements. Plans are closed on step completion, not on merge.

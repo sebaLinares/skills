@@ -85,6 +85,14 @@ area overlaps with any open debt items.
 - ExecPlans must satisfy every non-negotiable requirement in
   [`docs/PLANS.md`](docs/PLANS.md). Deviations from the spec are
   themselves decisions and must be logged.
+- No plan moves from `docs/exec-plans/active/` to `completed/` without
+  an Evaluator transcript whose latest run shows Alignment + Acceptance
+  both `pass`. The Evaluator is an independent agent or tool (fresh
+  subagent, separate session, external CLI agent, human reviewer) — see
+  [ADR 003](docs/decisions/003-evaluator-gate.md) and
+  [`docs/PLANS.md`](docs/PLANS.md) → "The `Evaluator transcript`
+  section". This is the worker/checker split applied to plan
+  completion.
 
 The phase-6 gate is enforced mechanically by a plan-coverage sensor
 wired into the pre-commit hook. The sensor checks that every staged

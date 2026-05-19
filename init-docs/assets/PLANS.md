@@ -94,6 +94,57 @@ The `features:` field has no interaction with the plan-coverage sensor
 — that sensor reads `covers:` paths only and is unaware of
 `FEATURES.md`.
 
+### The `Evaluator transcript` section
+
+No plan moves from `docs/exec-plans/active/` to
+`docs/exec-plans/completed/` without an independent **Evaluator** pass.
+The Evaluator is a coding agent or tool that does **not** share state
+with the plan's worker — a fresh subagent, separate session, external
+CLI agent, or human reviewer. Independence is structural: same agent,
+same session, same context does not qualify. See ADR 003 for the why.
+
+**Invocation contract.** Universal shape `<evaluator-cmd> <plan-path>`.
+The consuming repo declares the concrete command in
+`docs/processes/dev-setup.md` § Evaluator convention. The Evaluator
+writes its output directly into the plan's `## Evaluator transcript`
+section. The worker never edits that section.
+
+**Verdicts.** Two required, one optional:
+
+- **Alignment** (required) — the diff implements what the plan's
+  Plan-of-Work and Concrete Steps said it would.
+- **Acceptance** (required) — the plan's Validation & Acceptance
+  criteria were actually verified, with evidence.
+- **Quality** (optional) — code-quality review. A failing Quality
+  verdict is *not* a completion blocker by itself; it routes to
+  `docs/tech-debt-tracker.md`.
+
+**Closure rule.** Worker moves the plan to `completed/` only if the
+latest transcript block has Alignment + Acceptance both `pass`. On
+fail, the plan stays in `active/`; the worker logs the failure in the
+Decision Log, addresses it, and re-invokes the Evaluator. Each retry
+appends a new timestamped block.
+
+**Block shape.** Each Evaluator invocation appends a block of this
+form:
+
+    **Run N — YYYY-MM-DD HH:MMZ — <evaluator-cmd>**
+
+    - Alignment: pass | fail — <one-line note>
+    - Acceptance: pass | fail — <one-line note>
+    - Quality: pass | fail | not requested — <one-line note>
+
+    References: <commands run, files checked>
+
+Long failure details belong in the Decision Log (worker's response to
+the fail) and Surprises & Discoveries (what was uncovered), not in
+this section. This section is a gate, not a log.
+
+**Feature-less plans get the same gate.** Refactors and infra plans
+are arguably the most prone to "I think it's equivalent"
+overconfidence; the Evaluator confirms the verifier was actually run
+and reported no regression.
+
 ## Non-negotiable requirements
 
 - **Every ExecPlan must be fully self-contained.** A novice with only this
@@ -149,6 +200,10 @@ proceeds. The starting skeleton is in
   risky or destructive steps, specify explicit rollback.
 - **Artifacts and Notes** — important transcripts, diffs, or snippets
   as indented examples. Concise, focused on proof of success.
+- **Evaluator transcript** — verdicts from the independent Evaluator
+  pass that gates the `active/` → `completed/` transition. Written by
+  the Evaluator only; the worker never edits this section. See "The
+  `Evaluator transcript` section" below for the contract.
 - **Interfaces and Dependencies** — libraries, modules, and services to
   use and why. Types, interfaces, and function signatures that must
   exist at the end of the milestone. Prefer stable, repository-relative

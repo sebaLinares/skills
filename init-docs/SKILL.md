@@ -76,7 +76,8 @@ and directory the skill would write:
 - Templates: `docs/analysis/_template.md`, `docs/exec-plans/_template.md`.
 - Seeded docs: `docs/processes/harness.md`, `docs/processes/dev-setup.md`,
   `docs/decisions/001-harness-design.md`,
-  `docs/decisions/002-session-exit.md`, `docs/references/README.md`,
+  `docs/decisions/002-session-exit.md`,
+  `docs/decisions/003-evaluator-gate.md`, `docs/references/README.md`,
   `docs/generated/README.md`.
 
 First, read `.harness-version` at the repo root if it exists. This
@@ -178,7 +179,7 @@ It references `docs/processes/harness.md` (created in Step 7).
 ## Step 5 — Write the exec-plan template
 
 Copy `assets/exec-plan-template.md` to `docs/exec-plans/_template.md`.
-The template has 12 required sections matching `docs/PLANS.md`
+The template has 13 required sections matching `docs/PLANS.md`
 (created in Step 6).
 
 ## Step 6 — Write `docs/PLANS.md`
@@ -257,6 +258,11 @@ across any project and stay verbatim.
 
 Copy `assets/002-session-exit.md` to
 `docs/decisions/002-session-exit.md`. No placeholders.
+
+## Step 13b — Seed ADR 003
+
+Copy `assets/003-evaluator-gate.md` to
+`docs/decisions/003-evaluator-gate.md`. No placeholders.
 
 ## Step 14 — Write `docs/README.md`
 
@@ -367,13 +373,14 @@ List every file and directory created or skipped. Use four sections:
   with its value. Note `docs/FEATURES.md` as an empty ledger by design
   (rows are added during phase 1 of the first brief — *not* a
   needs-filling file). List ADR 002 at
-  `docs/decisions/002-session-exit.md`.
+  `docs/decisions/002-session-exit.md` and ADR 003 at
+  `docs/decisions/003-evaluator-gate.md`.
 - **Skipped (already existed)** — existing files not touched.
 - **Needs filling** — files written with placeholder content the user
   must resolve. At minimum: `ARCHITECTURE.md`, `SECURITY.md`,
-  `docs/processes/dev-setup.md` (including its new "Feature
-  verification convention" section), and any `{{PLACEHOLDER}}`
-  remaining in ADR 001.
+  `docs/processes/dev-setup.md` (including its "Feature verification
+  convention" and "Evaluator convention" sections), and any
+  `{{PLACEHOLDER}}` remaining in ADR 001.
 - **Needs manual merge** — only if the user chose "upgrade" or "skip"
   and a pre-existing file would have been updated. Show the exact
   content to merge.

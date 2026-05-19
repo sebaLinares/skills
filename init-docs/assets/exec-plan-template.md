@@ -104,6 +104,15 @@ environment clean after completion.
 Important transcripts, diffs, or snippets as indented examples. Keep
 them concise and focused on what proves success.
 
+## Evaluator transcript
+
+Written by the Evaluator only; the worker does not edit this section.
+The Evaluator is invoked at the end of Phase 6 before the plan moves
+to `completed/` — see [`../PLANS.md`](../PLANS.md) → "The
+`Evaluator transcript` section" for the contract and block shape.
+
+_No runs yet._
+
 ## Interfaces and Dependencies
 
 Libraries, modules, and services to use and why. Types, interfaces, and
