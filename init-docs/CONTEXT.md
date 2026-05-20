@@ -61,6 +61,17 @@ Breaks the harness's prior model-agnosticism deliberately so that telemetry
 compounds across scaffolded repos. Enforced by reading order + steering loop,
 not by mechanical sensor.
 
+**Hard constraint**:
+A repo-wide invariant that applies at every moment of every phase, distinct from a [[phase-gate]] (sequencing rule, fires only at transitions). Hard constraints sit in a `## Hard constraints (MUST / MUST NOT)` block immediately below `## Operating principle` in AGENTS.md, loud-labelled per item, each citing an ADR. Initial set (ADR 005): [[wip]]=1 on ExecPlans, no edits outside `covers:` during execution, no opportunistic refactor before verifier-green, no chat-only knowledge, no silent compliance with rule violations. The load-bearing motivation is the prose-equivalence problem — philosophical text and MUST NOTs look identical to a model without the loud label.
+_Avoid_: "guideline" (soft, no label), "phase gate" (different category, see below).
+
+**Phase gate**:
+A sequencing rule that fires at the transition between phases — "X must precede Y". Distinguishable from a [[hard-constraint]] (invariant, at all times). Examples: no code without an approved ExecPlan (phase 5→6), no plan moves to `completed/` without an Evaluator transcript (phase 6 → close). Lives in `## Phase gates` in AGENTS.md, below the hard constraints block.
+_Avoid_: "hard constraint" (invariants, not transitions); "checkpoint" (overloaded with CI usage).
+
+**WIP**:
+Work-in-progress counter, applied at the ExecPlan level. At most one plan in `docs/exec-plans/active/` at a time (a [[hard-constraint]], ADR 005). Features inherit the bound — a Feature is in scope of zero or one active ExecPlan. Analyses are not counted; parallel investigation is cheap and encouraged. Override is guide-only: the agent surfaces the WIP collision; on user approval (hotfix, blocked-on-external, scope split), the displaced plan gets a one-line Decision Log entry recording the pause and reason before the new plan opens. No `paused/` folder, no `status: paused` frontmatter — the harness avoids new state where conversational discipline suffices.
+
 ## Relationships
 
 - A **Feature** is verified by one or more tests, addressed via a single tagged subset command (`#suite-tag` / `--grep feat:<id>` / equivalent).

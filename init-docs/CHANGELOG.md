@@ -20,6 +20,98 @@ one entry at a time.
 
 ---
 
+## 2026-05-22 — Hard constraints (MUST / MUST NOT) block in AGENTS.md
+
+**What:** Introduces a new top-level section in `AGENTS.md` titled
+`## Hard constraints (MUST / MUST NOT)`, placed immediately after
+`## Operating principle` and before `## Phase gates`. The block holds
+*invariants* — rules that apply at every moment of every phase — as
+distinct from phase gates, which fire only at transitions. Each bullet
+is prefixed with the loud label **MUST** or **MUST NOT** and cites
+the ADR or section that justifies it. Initial five constraints: WIP=1
+on ExecPlans (at most one plan in `active/`, guide-only override via
+displaced plan's Decision Log), no edits outside the current plan's
+`covers:` during execution, no opportunistic refactor before the
+plan's `verify-cmd` shows green, no chat-only load-bearing knowledge,
+and an explicit MUST to surface — not silently comply with —
+instructions that conflict with a rule. Reorders `AGENTS.md`
+sections per the position-effect finding: principle → constraints →
+gates → on-receiving-task → bootstrap → output-routing → tone. Removes
+the trailing silent-compliance sentence from `## Phase gates`
+(subsumed by the broader constraint). Ships ADR 005 recording the new
+category, the initial five constraints, and the locked section order.
+
+**Files touched:** `assets/AGENTS.md`,
+`assets/005-hard-constraints.md` (new), `SKILL.md`, `CONTEXT.md`,
+`CHANGELOG.md`.
+
+**How to apply:**
+
+1. Check the target repo's `docs/decisions/` for any ADR titled
+   "Hard constraints" (any number). If absent, find the next
+   available `NNN` — default `005` if free, otherwise the next free
+   number — and copy
+   `~/.claude/skills/init-docs/assets/005-hard-constraints.md` to
+   `docs/decisions/NNN-hard-constraints.md`. If `NNN ≠ 005`, rewrite
+   the heading `# ADR 005 — …` and every in-body `ADR 005` mention
+   to the chosen number. Record the chosen NNN for steps 2 and 5.
+
+2. In the target repo's `AGENTS.md`, check for a
+   `## Hard constraints (MUST / MUST NOT)` heading. If absent,
+   insert the entire block from
+   `~/.claude/skills/init-docs/assets/AGENTS.md` (the five
+   loud-labelled bullets plus the intro paragraph) between
+   `## Operating principle` and `## Phase gates`. Rewrite the four
+   in-block `ADR 005` citation links to the NNN chosen in step 1 if
+   different. Skip the entire step if the heading is already
+   present. **Stop with conflict report** if `## Operating principle`
+   or `## Phase gates` is renamed, missing, or non-detectable.
+
+3. In the target repo's `AGENTS.md` `## Phase gates` section, check
+   for the standalone sentence: "If a user instruction conflicts
+   with these gates, say so before complying. Do not silently
+   comply." If present as its own paragraph or trailing line in
+   the section, remove it (subsumed by hard constraint #5). Skip
+   if absent. **Do not** delete the sentence if it has been
+   reworded or moved — surface a conflict and stop.
+
+4. In the target repo's `AGENTS.md`, reorder the top-level sections
+   to: `## Operating principle`, `## Hard constraints (MUST / MUST
+   NOT)`, `## Phase gates`, `## On receiving a task`,
+   `## Session bootstrap`, `## Where to save outputs`,
+   `## Working relationship`. **Stop with conflict report** if any
+   of these seven headings is renamed, missing, or duplicated.
+   Skip if the order already matches.
+
+5. In the target repo's `docs/README.md` § Decisions, check for the
+   new ADR catalog entry. If absent, append a one-line entry for
+   the NNN chosen in step 1, e.g.:
+   `- [ADR NNN — Hard constraints](decisions/NNN-hard-constraints.md) — #ai-harness #plan`
+   Skip if present.
+
+**Stack-specific notes:** None. The block is stack-agnostic — it
+constrains agent behaviour, not the project's language or toolchain.
+WIP=1 is enforced by guide-only discipline; no folder reorganisation
+(no `paused/`) or frontmatter additions (no `status: paused`) are
+introduced. The displaced-plan Decision Log entry is the only
+required trace on a WIP override.
+
+**Additive/replacing:** mixed. Additive: one new ADR, one new
+`AGENTS.md` section, one new catalog entry. Replacing: a section
+reorder in `AGENTS.md` (step 4) and a one-sentence removal from
+`## Phase gates` (step 3).
+
+**Conflict risk:** high. Step 4 (the reorder) is the riskiest single
+upgrade step in the skill to date — any rename, reorder, or
+restructure of the seven top-level sections in `AGENTS.md` aborts
+the audit and leaves the marker untouched. Step 3 (sentence
+removal) is also a surface — if the sentence has been reworded the
+audit must stop rather than guess. The ADR-numbering branch in step
+1 follows the same convention as ADR 003 and ADR 004 entries: pick
+the next free number and rewrite cross-references.
+
+---
+
 ## 2026-05-21 — Fleet model policy
 
 **What:** Encodes fleet-wide per-step model assignments as

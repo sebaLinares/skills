@@ -79,7 +79,8 @@ and directory the skill would write:
   `docs/decisions/001-harness-design.md`,
   `docs/decisions/002-session-exit.md`,
   `docs/decisions/003-evaluator-gate.md`,
-  `docs/decisions/004-fleet-model-policy.md`, `docs/references/README.md`,
+  `docs/decisions/004-fleet-model-policy.md`,
+  `docs/decisions/005-hard-constraints.md`, `docs/references/README.md`,
   `docs/generated/README.md`.
 
 First, read `.harness-version` at the repo root if it exists. This
@@ -276,6 +277,11 @@ Copy `assets/003-evaluator-gate.md` to
 Copy `assets/004-fleet-model-policy.md` to
 `docs/decisions/004-fleet-model-policy.md`. No placeholders.
 
+## Step 13d — Seed ADR 005
+
+Copy `assets/005-hard-constraints.md` to
+`docs/decisions/005-hard-constraints.md`. No placeholders.
+
 ## Step 14 — Write `docs/README.md`
 
 Copy `assets/docs-README.md` to `docs/README.md`. Two substitutions:
@@ -385,9 +391,10 @@ List every file and directory created or skipped. Use four sections:
   with its value. Note `docs/FEATURES.md` as an empty ledger by design
   (rows are added during phase 1 of the first brief — *not* a
   needs-filling file). List ADR 002 at
-  `docs/decisions/002-session-exit.md` and ADR 003 at
+  `docs/decisions/002-session-exit.md`, ADR 003 at
   `docs/decisions/003-evaluator-gate.md`, ADR 004 at
-  `docs/decisions/004-fleet-model-policy.md`, and the fleet model
+  `docs/decisions/004-fleet-model-policy.md`, ADR 005 at
+  `docs/decisions/005-hard-constraints.md`, and the fleet model
   policy at `docs/processes/model-policy.md`.
 - **Skipped (already existed)** — existing files not touched.
 - **Needs filling** — files written with placeholder content the user

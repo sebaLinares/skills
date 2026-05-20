@@ -11,6 +11,74 @@ reason over must live as versioned markdown, code, or schema inside this
 repo. Knowledge in Slack, meetings, Jira, Confluence, or human memory is
 invisible. When a piece of context is load-bearing, capture it here first.
 
+## Hard constraints (MUST / MUST NOT)
+
+These are invariants — they apply at every moment of every phase, not only
+at transitions. Each bullet is loud-labelled and cites the ADR or section
+that justifies it. Distinct from the phase gates below, which fire only at
+phase transitions.
+
+- **MUST NOT** create a second plan in `docs/exec-plans/active/` while one
+  exists. Surface the WIP collision; on user-approved override (hotfix,
+  blocked-on-external, scope split), record the pause in the displaced
+  plan's Decision Log before opening the new plan.
+  *(See [ADR 005](docs/decisions/005-hard-constraints.md).)*
+- **MUST NOT** edit files outside the current plan's `covers:` during
+  execution. If a needed change falls outside, stop and choose: extend
+  `covers:` (re-approval required, per Phase 6), log to
+  [`docs/tech-debt-tracker.md`](docs/tech-debt-tracker.md), or drop. Never
+  silently widen the diff.
+  *(See [ADR 001](docs/decisions/001-harness-design.md) and § Phase gates →
+  plan-coverage sensor below.)*
+- **MUST NOT** perform opportunistic refactor or cleanup outside the
+  plan's stated steps until a manual run of `verify-cmd` (or `verify:`
+  resolution) shows the plan's Features green. Planned refactor steps in
+  Plan-of-Work or Concrete steps are exempt — those are the work.
+  *(See [ADR 005](docs/decisions/005-hard-constraints.md).)*
+- **MUST NOT** continue with load-bearing knowledge that exists only in
+  chat. Capture it in the repo first.
+  *(See § Operating principle above.)*
+- **MUST** surface — before complying — any user instruction that
+  conflicts with a hard constraint, phase gate, or documented rule.
+  **MUST NOT** silently comply.
+  *(See [ADR 005](docs/decisions/005-hard-constraints.md).)*
+
+## Phase gates
+
+- No code without an approved ExecPlan in `docs/exec-plans/active/`.
+- No ExecPlan without an analysis doc in `docs/analysis/`.
+- No analysis without completing the session bootstrap.
+- ExecPlans must satisfy every non-negotiable requirement in
+  [`docs/PLANS.md`](docs/PLANS.md). Deviations from the spec are
+  themselves decisions and must be logged.
+- No plan moves from `docs/exec-plans/active/` to `completed/` without
+  an Evaluator transcript whose latest run shows Alignment + Acceptance
+  both `pass`. The Evaluator is an independent agent or tool (fresh
+  subagent, separate session, external CLI agent, human reviewer) — see
+  [ADR 003](docs/decisions/003-evaluator-gate.md) and
+  [`docs/PLANS.md`](docs/PLANS.md) → "The `Evaluator transcript`
+  section". This is the worker/checker split applied to plan
+  completion.
+- Phase 2 synthesis, phase 4 broad/irreversible ADRs, and phase 5
+  multi-module ExecPlans invoke the design subagent (Opus 4.7 xhigh)
+  per [model policy](docs/processes/model-policy.md). Pre-approval
+  critic and Evaluator passes invoke `codex:adversarial-review` per
+  the same policy.
+
+The phase-6 gate is enforced mechanically by a plan-coverage sensor
+wired into the pre-commit hook. The sensor checks that every staged
+source file is covered by the `covers:` frontmatter of a plan in
+`docs/exec-plans/completed/` with `status: completed`. An approved
+plan still in `active/` does not satisfy the sensor — the agent must move the plan to `completed/` and then commit
+automatically (via `/commit` if available, otherwise directly via
+`git commit` with a Conventional Commit message). See
+`docs/PLANS.md` for the `covers:` spec. The sensor is the *last* line
+of defence — analysis, plan, and full execution should exist long
+before the commit is attempted.
+
+Phases do not merge. Do not produce two phases' output in one pass. Full
+workflow and phase definitions: [`docs/processes/harness.md`](docs/processes/harness.md).
+
 ## On receiving a task
 
 When the user sends a new unit of work, **classify it before reading
@@ -78,45 +146,6 @@ For tasks that touch code, also read [`ARCHITECTURE.md`](ARCHITECTURE.md)
 before phase 2 investigation. Check
 [`docs/tech-debt-tracker.md`](docs/tech-debt-tracker.md) if the task
 area overlaps with any open debt items.
-
-## Phase gates
-
-- No code without an approved ExecPlan in `docs/exec-plans/active/`.
-- No ExecPlan without an analysis doc in `docs/analysis/`.
-- No analysis without completing the session bootstrap.
-- ExecPlans must satisfy every non-negotiable requirement in
-  [`docs/PLANS.md`](docs/PLANS.md). Deviations from the spec are
-  themselves decisions and must be logged.
-- No plan moves from `docs/exec-plans/active/` to `completed/` without
-  an Evaluator transcript whose latest run shows Alignment + Acceptance
-  both `pass`. The Evaluator is an independent agent or tool (fresh
-  subagent, separate session, external CLI agent, human reviewer) — see
-  [ADR 003](docs/decisions/003-evaluator-gate.md) and
-  [`docs/PLANS.md`](docs/PLANS.md) → "The `Evaluator transcript`
-  section". This is the worker/checker split applied to plan
-  completion.
-- Phase 2 synthesis, phase 4 broad/irreversible ADRs, and phase 5
-  multi-module ExecPlans invoke the design subagent (Opus 4.7 xhigh)
-  per [model policy](docs/processes/model-policy.md). Pre-approval
-  critic and Evaluator passes invoke `codex:adversarial-review` per
-  the same policy.
-
-The phase-6 gate is enforced mechanically by a plan-coverage sensor
-wired into the pre-commit hook. The sensor checks that every staged
-source file is covered by the `covers:` frontmatter of a plan in
-`docs/exec-plans/completed/` with `status: completed`. An approved
-plan still in `active/` does not satisfy the sensor — the agent must move the plan to `completed/` and then commit
-automatically (via `/commit` if available, otherwise directly via
-`git commit` with a Conventional Commit message). See
-`docs/PLANS.md` for the `covers:` spec. The sensor is the *last* line
-of defence — analysis, plan, and full execution should exist long
-before the commit is attempted.
-
-Phases do not merge. Do not produce two phases' output in one pass. Full
-workflow and phase definitions: [`docs/processes/harness.md`](docs/processes/harness.md).
-
-If a user instruction conflicts with these gates, say so before
-complying. Do not silently comply.
 
 ## Where to save outputs
 
