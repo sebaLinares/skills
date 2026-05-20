@@ -24,6 +24,11 @@ Active plans live in `docs/exec-plans/active/`. Completed plans move to
 during plan execution are promoted to ADRs in `docs/decisions/`;
 plan-scoped decisions stay inline in the plan's Decision Log.
 
+Plan drafting follows the fleet model policy in
+`docs/processes/model-policy.md` — multi-module or irreversible plans are
+drafted by the design subagent; the pre-approval critic pass is
+`codex:adversarial-review`.
+
 ## Frontmatter
 
 Every ExecPlan begins with a YAML frontmatter block. Required fields:

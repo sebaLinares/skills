@@ -12,6 +12,10 @@ project has a different stack.
 *Fill in:* primary language + version, package manager, any other
 required tools (formatter, linter, container runtime).
 
+- Codex plugin (required for default Evaluator and adversarial review).
+  Install via Claude Code marketplace. If unavailable, see
+  `docs/processes/model-policy.md` § Fallback.
+
 ## Pre-commit hook
 
 *Fill in:* what the pre-commit hook runs and how to install it.
@@ -69,12 +73,14 @@ plan-coverage sensor.
 
 ## Evaluator convention
 
-*Fill in:* the exact shell command that invokes this project's
-**Evaluator** with a plan path. Universal shape:
+Fleet default per `docs/processes/model-policy.md`. Override only if
+§ Fallback applies. Universal shape:
 
     <evaluator-cmd> <plan-path>
 
-`evaluator-cmd:` (literal): _________________________________________
+    evaluator-cmd: codex:adversarial-review --base <merge-base>
+    # Focus text template: "Verify Alignment + Acceptance against
+    # docs/exec-plans/active/<plan>.md. Report verdicts per ADR 003 block shape."
 
 *Independence assertion (single line):* confirm that this command
 runs in a context that does **not** share state with the worker's
@@ -92,9 +98,9 @@ produced the plan never edits that section — independence is
 structural, not convention-only. See ADR 003 and `docs/PLANS.md` →
 "The `Evaluator transcript` section" for the full contract.
 
-Until this section is filled in, every plan must be evaluated by a
-human reviewer in a separate session and the verdict recorded by that
-reviewer in the transcript section. The worker cannot self-grade.
+When the codex plugin is unavailable, fall back to a fresh Claude
+subagent per `model-policy.md` § Fallback. The independence assertion
+still holds — fresh subagent ≠ worker session.
 
 ## Running locally
 

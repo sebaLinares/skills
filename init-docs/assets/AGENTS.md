@@ -61,7 +61,9 @@ substantive output:
 5. Note which Features in `docs/FEATURES.md` are `Passing` as the
    baseline for the session-exit verifier dimension.
 6. Read only the docs whose tags match the current task.
-7. **Harness-version check.** Read `.harness-version` at the repo
+7. Read `docs/processes/model-policy.md` — the fleet model assignments
+   for harness steps.
+8. **Harness-version check.** Read `.harness-version` at the repo
    root (single-line ISO date). If the file is present, compare its
    value to the most recent `## YYYY-MM-DD` heading in
    `~/.claude/skills/init-docs/CHANGELOG.md`. If the marker is
@@ -93,6 +95,11 @@ area overlaps with any open debt items.
   [`docs/PLANS.md`](docs/PLANS.md) → "The `Evaluator transcript`
   section". This is the worker/checker split applied to plan
   completion.
+- Phase 2 synthesis, phase 4 broad/irreversible ADRs, and phase 5
+  multi-module ExecPlans invoke the design subagent (Opus 4.7 xhigh)
+  per [model policy](docs/processes/model-policy.md). Pre-approval
+  critic and Evaluator passes invoke `codex:adversarial-review` per
+  the same policy.
 
 The phase-6 gate is enforced mechanically by a plan-coverage sensor
 wired into the pre-commit hook. The sensor checks that every staged

@@ -99,6 +99,9 @@ The analysis doc contains:
 6. **Open questions** — anything the developer cannot resolve alone.
 7. **Risks** — known unknowns, dependencies on other teams, compliance, etc.
 
+Synthesis of the analysis doc invokes the design subagent per
+`docs/processes/model-policy.md`.
+
 Phase-2 gate: analysis doc exists at the path above, is indexed in `docs/README.md`,
 and open questions are explicit. Do not proceed to plan without this.
 
@@ -129,6 +132,9 @@ Not every task needs an ADR. Use this rule:
 
 Inline decisions go in the plan's *decision log* (see phase 5 template).
 
+Drafting an ADR with cross-plan or irreversible scope invokes the design
+subagent per the model policy.
+
 Phase-4 gate: every decision required by the plan is recorded somewhere — ADR
 or inline — with the reasoning, not just the outcome.
 
@@ -150,6 +156,9 @@ field is non-optional — every plan either lists `feat-NNN` IDs from
 [`../FEATURES.md`](../FEATURES.md) or declares itself feature-less with
 `feature-less-reason:`. On approval, every listed Feature transitions
 from `Not started` to `Active` in `FEATURES.md`.
+
+Drafting a multi-module ExecPlan invokes the design subagent. Before approval,
+request a `codex:adversarial-review` pass on the draft per the model policy.
 
 Phase-5 gate: the lead has read the plan and approved it, and the plan
 satisfies PLANS.md. No code is written before this.
@@ -236,6 +245,29 @@ present with latest Alignment + Acceptance both `pass`, plan in
 burn the harness. If a gate genuinely does not apply (e.g., a trivial bug fix
 with no architectural implication), say so explicitly in the analysis doc
 ("decisions phase skipped — no architectural impact").
+
+---
+
+## Model assignments
+
+The harness uses a fleet-wide model policy, not project-local preference. The
+canonical table is `docs/processes/model-policy.md`; this summary only names
+the assignments most likely to affect phase gates.
+
+| Step | Tier | Command |
+|---|---|---|
+| Default orchestration | Sonnet 4.6 high | Main session |
+| Phase 2 analysis synthesis | Opus 4.7 xhigh | Claude Task tool |
+| Phase 4 broad or irreversible ADRs | Opus 4.7 xhigh | Claude Task tool |
+| Phase 5 complex or multi-module ExecPlans | Opus 4.7 xhigh | Claude Task tool |
+| Pre-approval critic | GPT-5.5 high via codex plugin | `codex:adversarial-review` |
+| Mid-execution diff sanity | GPT-5.5 high via codex plugin | `codex:review` |
+| Rescue implementation | GPT-5.5 high via codex plugin | `codex:rescue` |
+| Completion Evaluator | GPT-5.5 high via codex plugin | `codex:adversarial-review --base <merge-base>` |
+
+If the codex plugin is unavailable, follow the fallback chain in
+`docs/processes/model-policy.md`; do not silently treat the main session as an
+independent checker.
 
 ---
 
@@ -347,6 +379,11 @@ helper that already exists, etc.
 - **Missing sensor** — the agent did the wrong thing and nothing caught it.
   Fix: add a lint rule, a pre-commit check, a test, a review-skill rule, or a
   custom linter message with remediation instructions.
+
+For failures involving planning, synthesis, review, or rescue, first ask:
+*was the right model used per `model-policy.md`?* If no, the failure is model
+drift — a policy violation — not a harness gap. Correct the assignment and then
+continue steering on any residual guide or sensor gap.
 
 **Never answer "just prompt harder."** If the same failure shows up a second
 time, it is a harness bug.

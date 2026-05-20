@@ -35,6 +35,32 @@ Every **Feature** declares how it is checked at creation time. `verify:` holds a
 **Feature provenance (`source:`)**:
 Every **Feature** row records where it came from — `brief`, `prd:<path>`, `analysis:<path>`, or `inferred`. Defuses free-form bloat without imposing a phase gate on Feature creation itself.
 
+**Orchestrator**:
+The agent owning the main session loop and continuity across phases. Default
+model: Sonnet 4.6 high. Delegates synthesis-heavy work to the design subagent
+and verification to checker commands.
+
+**Design subagent**:
+Opus 4.7 xhigh invoked from the orchestrator for the harness's design surfaces:
+analysis-doc synthesis (phase 2), broad/irreversible ADRs (phase 4),
+complex/multi-module ExecPlans (phase 5). Receives a self-contained brief from
+the orchestrator; writes the artifact in place; returns a one-paragraph
+summary. Reasoning is opaque to the orchestrator by design.
+
+**Checker / rescue tier**:
+GPT-5.5 high invoked via the codex plugin. Two roles share the tier because
+both require structural independence from the orchestrator: *checker*
+(Evaluator, pre-approval critic, diff sanity) reads and verdicts without
+writing code; *rescue* (`codex:rescue`) implements when the orchestrator is
+stuck. Independence is achieved by being a different model family, not just a
+different context window.
+
+**Model policy**:
+Fleet-wide per-step model assignments at `docs/processes/model-policy.md`.
+Breaks the harness's prior model-agnosticism deliberately so that telemetry
+compounds across scaffolded repos. Enforced by reading order + steering loop,
+not by mechanical sensor.
+
 ## Relationships
 
 - A **Feature** is verified by one or more tests, addressed via a single tagged subset command (`#suite-tag` / `--grep feat:<id>` / equivalent).

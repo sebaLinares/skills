@@ -55,6 +55,7 @@ Architecture Decision Records (ADRs). Explain *why* the system is the way it is.
 - [001 — Harness Engineering for AI Agent Usage](decisions/001-harness-design.md) — guides + sensors, phase gates, plans as first-class artifacts `#ai-harness` `#adr`
 - [002 — Session exit closes the bootstrap asymmetry](decisions/002-session-exit.md) — explicit session close-out checklist and chat-sweep routing `#ai-harness` `#adr`
 - [003 — Evaluator gate at plan completion](decisions/003-evaluator-gate.md) — independent evaluator pass before `active/` → `completed/`; worker/checker split for plan closure `#ai-harness` `#adr`
+- [004 — Fleet model policy](decisions/004-fleet-model-policy.md) — named models per harness step; Sonnet orchestrator, Opus design subagent, GPT-5.5 checker via codex plugin `#ai-harness` `#adr`
 
 ## Exec plans
 Active and completed initiative plans. First-class artifacts — reviewed before any code is written. Plan-scoped decisions live inline; architectural decisions escalate to ADRs.
@@ -71,6 +72,7 @@ How-we-work: guidelines, conventions, runbooks.
 
 - [Harness — Operating Manual](processes/harness.md) — day-to-day workflow phases, phase gates, steering loop; implements ADR 001 `#ai-harness` `#guideline`
 - [Developer setup](processes/dev-setup.md) — local toolchain, pre-commit hook, common commands — **fill in for this stack** `#ai-harness` `#guideline`
+- [Model policy](processes/model-policy.md) — fleet-wide per-step model assignments and codex command reference `#ai-harness` `#guideline`
 
 ## References
 External / legacy specs the code must conform to. See [references/README.md](references/README.md) for convention and the reference-vs-analysis distinction.
