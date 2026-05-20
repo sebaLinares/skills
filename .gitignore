@@ -3,6 +3,7 @@
 
 # Always track these root files
 !.gitignore
+!README.md
 !CLAUDE.md
 !AGENTS.md
 !install.sh
