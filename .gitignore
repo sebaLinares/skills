@@ -15,3 +15,5 @@
 !init-docs/**
 !commit/
 !commit/**
+!changelog/
+!changelog/**

@@ -1,0 +1,26 @@
+{
+  "skill_name": "changelog",
+  "evals": [
+    {
+      "id": 1,
+      "name": "feature-add-staged",
+      "prompt": "I just staged the implementation of a new --json flag on our CLI plus its unit tests and a tiny README mention. Update the changelog for me.",
+      "expected_output": "One Added bullet describing the --json flag (feature-level, not per-file). Updates [Unreleased] in CHANGELOG.md without bumping versions or committing.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "mixed-fix-and-deps",
+      "prompt": "/changelog",
+      "expected_output": "Recognizes the staged diff includes a bug fix in src/auth.ts plus an updated package-lock.json. Produces one Fixed bullet for the auth fix and one Changed bullet 'Updated dependencies.' for the lockfile. No file-level noise.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "missing-changelog-create",
+      "prompt": "summarize my staged changes for the changelog",
+      "expected_output": "Detects no CHANGELOG.md at repo root, asks before creating one, scaffolds the Keep-a-Changelog template only after confirmation, then proceeds with the summary into [Unreleased].",
+      "files": []
+    }
+  ]
+}
