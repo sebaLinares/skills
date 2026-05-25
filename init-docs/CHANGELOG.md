@@ -20,6 +20,153 @@ one entry at a time.
 
 ---
 
+## 2026-05-26 — Harness structure validator and doc garbage collector
+
+**What:** Ships two stdlib-Python validators from the init-docs skill,
+installed at `scripts/harness/` in every scaffolded repo:
+`check_harness_structure.py` (fast structural check — existence, 4-key
+YAML frontmatter on canonical markdown, required cross-references, no
+forbidden ephemera, no absolute paths), and `garbage_collect_docs.py`
+(slower audit — broken-reference scan, metadata staleness, orphan and
+ephemeral detection, markdown report). Both share
+`_canonical_manifest.py`: the single source of truth for the canonical
+file set, the frontmatter-required subset, required references,
+forbidden globs, and text-scan roots. Both honour `HARNESS_BYPASS` and
+accept `--dry-run`. The skill does **not** ship Makefile / pre-commit
+/ CI wiring — stack-specific, mirrors the plan-coverage sensor's
+posture (see 2026-04-20 entry). Example snippets ship in the ADR 007
+appendix, marked example-only. Adds 4-key YAML frontmatter
+(`owner: {{REPO_NAME}}`, `status`, `last_reviewed: 2026-05-26`,
+`update_trigger`) to the 18 canonical markdown assets. Subagent
+configs and hook scripts are existence-only — the harness 4 keys
+would collide with Claude Code's subagent schema or break shebangs;
+schema coexistence is tracked as tech debt. Closes ADR 003's
+deferral of CI enforcement for the documentation half of the
+worker/checker split.
+
+**Files touched:** `assets/scripts/check_harness_structure.py` (new),
+`assets/scripts/garbage_collect_docs.py` (new),
+`assets/scripts/_canonical_manifest.py` (new),
+`assets/007-harness-validators.md` (new), `assets/AGENTS.md`,
+`assets/ARCHITECTURE.md`, `assets/SECURITY.md`,
+`assets/docs-README.md`, `assets/PLANS.md`, `assets/FEATURES.md`,
+`assets/tech-debt-tracker.md`, `assets/harness.md`,
+`assets/dev-setup.md`, `assets/model-policy.md`,
+`assets/001-harness-design.md`, `assets/002-session-exit.md`,
+`assets/003-evaluator-gate.md`, `assets/004-fleet-model-policy.md`,
+`assets/005-hard-constraints.md`, `assets/references-README.md`,
+`assets/generated-README.md`, `SKILL.md`, `CHANGELOG.md`.
+
+**How to apply:**
+
+1. If any of `scripts/harness/check_harness_structure.py`,
+   `scripts/harness/garbage_collect_docs.py`, or
+   `scripts/harness/_canonical_manifest.py` is absent in the target
+   repo, copy all three from
+   `~/.claude/skills/init-docs/assets/scripts/` to
+   `scripts/harness/`. Create `scripts/harness/` if absent. `chmod +x`
+   `check_harness_structure.py` and `garbage_collect_docs.py` (not
+   `_canonical_manifest.py` — module). Skip if all three present.
+
+2. Check the target repo's `docs/decisions/` for any ADR titled
+   "Harness validators" (any number). If absent, find the next
+   available `NNN` — default `007` if free, otherwise the next free
+   number — and copy
+   `~/.claude/skills/init-docs/assets/007-harness-validators.md` to
+   `docs/decisions/NNN-harness-validators.md`. If `NNN ≠ 007`,
+   rewrite the heading `# ADR 007 — …` and every in-body `ADR 007`
+   mention to the chosen number. Record the chosen NNN for step 6.
+
+3. For each path in the canonical frontmatter list — `AGENTS.md`,
+   `ARCHITECTURE.md`, `SECURITY.md`, `docs/README.md`, `docs/PLANS.md`,
+   `docs/FEATURES.md`, `docs/tech-debt-tracker.md`,
+   `docs/processes/harness.md`, `docs/processes/dev-setup.md`,
+   `docs/processes/model-policy.md`,
+   `docs/decisions/00[1-5]-*.md`, the new ADR from step 2,
+   `docs/references/README.md`, `docs/generated/README.md` — check
+   whether the file starts with `---\n` (YAML frontmatter). If absent,
+   prepend the 4-key block:
+
+   ```yaml
+   ---
+   owner: <repo basename from git rev-parse --show-toplevel>
+   status: <stable | living | accepted — see table in ADR 007>
+   last_reviewed: 2026-05-26
+   update_trigger: <on-harness-change | on-module-change | …>
+   ---
+   ```
+
+   Source the `status` and `update_trigger` values from the matching
+   asset under `~/.claude/skills/init-docs/assets/`. **Skip** files
+   that already start with `---\n` *even if the keys differ* — flag
+   as `frontmatter present but schema unverified` in the audit
+   report. Subagent configs at `.claude/agents/*.md` are exempt
+   (existence-only).
+
+4. In the target repo's `docs/processes/harness.md`, check
+   `## What the harness contains today` (or the equivalent harness-
+   contents heading) for a `### Harness validators` subsection. If
+   absent, append the subsection from
+   `~/.claude/skills/init-docs/assets/harness.md`. Skip if present.
+   **Stop with conflict report** if the parent heading is renamed.
+
+5. In the target repo's `docs/processes/dev-setup.md`, check for a
+   `## Harness validators` heading. If absent, insert the section
+   between `## Pre-tool-use hook (covers: enforcement)` and
+   `## Common commands` with the contents from
+   `~/.claude/skills/init-docs/assets/dev-setup.md`. Skip if present.
+   **Stop with conflict report** if either neighbouring heading is
+   renamed or missing.
+
+6. In the target repo's `docs/README.md` § Decisions, check for a
+   catalog entry referencing `decisions/NNN-harness-validators.md`
+   (NNN from step 2). If absent, append a one-line entry using the
+   format in `~/.claude/skills/init-docs/assets/docs-README.md`.
+   Skip if present.
+
+7. **Self-verification.** Run
+   `python3 scripts/harness/check_harness_structure.py --dry-run`.
+   If `--dry-run` exits non-zero (the script is broken), stop and
+   report; do not advance the marker. If `--dry-run` exits 0 but
+   reports findings to stderr, surface them in the audit summary as
+   needs-filling items (frontmatter still on `{{REPO_NAME}}`, etc.)
+   and continue. Then run
+   `python3 scripts/harness/check_harness_structure.py` (no flag).
+   If exit 0, advance `.harness-version` to `2026-05-26`. If exit 1,
+   leave the marker at the previous entry's date and report which
+   check failed.
+
+**Stack-specific notes:** No Makefile / pre-commit / CI wiring ships.
+Repos translate the contract documented in `dev-setup.md` § Harness
+validators into their stack of choice (Make, Task, just, npm scripts,
+GitLab CI, CircleCI, etc.). The Python ≥ 3.9 requirement applies
+universally; repos without Python on `PATH` install it or
+re-implement the contract in their stack's native language (the
+manifest is data, the checks are mechanical). Older harness repos
+(`.harness-version < 2026-05-24`) won't have `.claude/agents/` or
+`.claude/hooks/` populated when this entry fires — the audit
+processes entries oldest-first (SKILL.md § Audit mode procedure step
+2), so the 2026-05-24 and 2026-05-25 entries land first and create
+those paths before this entry's manifest existence check runs them.
+
+**Additive/replacing:** mostly additive — three new scripts, one new
+ADR, two new doc sections, one new catalog entry. One additive
+retrofit: 4-key YAML frontmatter prepended to 18 canonical markdown
+files (prepend only; never overwrite an existing `---` block).
+
+**Conflict risk:** medium. Surfaces: renamed
+`## What the harness contains today` in `harness.md`, renamed
+`## Pre-tool-use hook (covers: enforcement)` or `## Common commands`
+in `dev-setup.md`, renamed `## Decisions` in `docs/README.md`,
+existing-but-different frontmatter on canonical files (flagged, not
+overwritten), an `ADR 007` reserved for another topic (next free
+NNN + rewrite). Step 7's self-verification is the riskiest single
+addition — first time the audit runs code it just installed.
+Mitigation: `--dry-run` first, real run second, marker advances only
+on real-run exit 0.
+
+---
+
 ## 2026-05-25 — Codex slash commands replaced with script-invocation forms; Evaluator focus reframed
 
 **What:** The codex-plugin-cc slash commands (`/codex:review`,

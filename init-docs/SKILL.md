@@ -89,6 +89,7 @@ and directory the skill would write:
   `docs/decisions/004-fleet-model-policy.md`,
   `docs/decisions/005-hard-constraints.md`,
   `docs/decisions/006-pre-approval-critic-gate.md`,
+  `docs/decisions/007-harness-validators.md`,
   `docs/references/README.md`,
   `docs/generated/README.md`.
 - Subagent configs: `.claude/agents/harness-analyst.md`,
@@ -98,6 +99,10 @@ and directory the skill would write:
   `.claude/settings.local.json` (gitignored, per-contributor).
 - Covers-hook reference: `.claude/hooks/verify-covers-hook.sh` (tracked
   in git; activation opt-in via `.claude/settings.local.json`).
+- Harness validators: `scripts/harness/check_harness_structure.py`,
+  `scripts/harness/garbage_collect_docs.py`,
+  `scripts/harness/_canonical_manifest.py` (tracked in git;
+  stack-specific wiring deferred to `docs/processes/dev-setup.md`).
 
 First, read `.harness-version` at the repo root if it exists. This
 determines the mode (see "Modes of operation" above). If the marker
@@ -303,6 +308,11 @@ Copy `assets/005-hard-constraints.md` to
 Copy `assets/006-pre-approval-critic-gate.md` to
 `docs/decisions/006-pre-approval-critic-gate.md`. No placeholders.
 
+## Step 13f — Seed ADR 007
+
+Copy `assets/007-harness-validators.md` to
+`docs/decisions/007-harness-validators.md`. No placeholders.
+
 ## Step 14 — Write `docs/README.md`
 
 Copy `assets/docs-README.md` to `docs/README.md`. Two substitutions:
@@ -447,6 +457,32 @@ Flag in the Step 18 report: "Covers: hook script tracked in
 `docs/processes/dev-setup.md` § Pre-tool-use hook for the
 `.claude/settings.json` snippet."
 
+## Step 16d — Ship the harness validators
+
+Copy `assets/scripts/check_harness_structure.py`,
+`assets/scripts/garbage_collect_docs.py`, and
+`assets/scripts/_canonical_manifest.py` to `scripts/harness/` in the
+project root. Create `scripts/harness/` if absent. `chmod +x` the two
+CLI scripts (not `_canonical_manifest.py` — it is an importable
+module, not an executable).
+
+**Tracked in git.** Every contributor gets the validators on
+checkout. The scripts are stdlib-only (Python ≥ 3.9) and self-contain
+— `_canonical_manifest.py` is the single source of truth for the
+canonical-file set, the frontmatter subset, required references, and
+text-scan roots.
+
+Do **not** wire them into pre-commit / Makefile / Task / CI — that is
+stack-specific and lives in `docs/processes/dev-setup.md` § Harness
+validators. Example snippets ship in
+`docs/decisions/007-harness-validators.md` § Appendix, marked
+explicitly as example-only.
+
+Flag in the Step 18 report: "Harness validators installed at
+`scripts/harness/`. Requires `python3 ≥ 3.9` on `PATH`. Wiring
+(pre-commit / CI / Makefile) is stack-specific — see
+`docs/processes/dev-setup.md` § Harness validators."
+
 ## Step 17 — Write `.harness-version`
 
 Write a single line to `.harness-version` at the repo root. The value
@@ -536,15 +572,20 @@ List every file and directory created or skipped. Use four sections:
   `docs/decisions/003-evaluator-gate.md`, ADR 004 at
   `docs/decisions/004-fleet-model-policy.md`, ADR 005 at
   `docs/decisions/005-hard-constraints.md`, ADR 006 at
-  `docs/decisions/006-pre-approval-critic-gate.md`, and the fleet
-  model policy at `docs/processes/model-policy.md`.
+  `docs/decisions/006-pre-approval-critic-gate.md`, ADR 007 at
+  `docs/decisions/007-harness-validators.md`, the fleet model
+  policy at `docs/processes/model-policy.md`, and the three harness
+  validators at `scripts/harness/`.
 - **Skipped (already existed)** — existing files not touched.
 - **Needs filling** — files written with placeholder content the user
   must resolve. At minimum: `ARCHITECTURE.md`, `SECURITY.md`,
   `docs/processes/dev-setup.md` (including its "Feature verification
-  convention" section and the independence assertion under "Evaluator
-  convention"), and any
-  `{{PLACEHOLDER}}` remaining in ADR 001.
+  convention" section, the independence assertion under "Evaluator
+  convention", and the wiring contract under "Harness validators"),
+  and any `{{PLACEHOLDER}}` remaining in ADR 001. Repos may also want
+  to substitute `{{REPO_NAME}}` in the `owner:` frontmatter field of
+  every canonical markdown file — left as a literal placeholder by
+  design so the choice is explicit.
 - **Needs manual merge** — only if the user chose "upgrade" or "skip"
   and a pre-existing file would have been updated. Show the exact
   content to merge.

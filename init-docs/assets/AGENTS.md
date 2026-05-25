@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: stable
+last_reviewed: 2026-05-26
+update_trigger: on-harness-change
+---
+
 # Agent Instructions
 
 The entry point into this repository for any coding agent. Loaded

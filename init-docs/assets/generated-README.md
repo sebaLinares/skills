@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: stable
+last_reviewed: 2026-05-26
+update_trigger: on-convention-change
+---
+
 # Generated
 
 Machine-generated artifacts. **Do not edit by hand** — anything here is

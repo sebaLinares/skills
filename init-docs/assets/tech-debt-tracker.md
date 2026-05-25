@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: living
+last_reviewed: 2026-05-26
+update_trigger: on-debt-added-or-resolved
+---
+
 # Tech debt tracker
 
 Running ledger of known hazards, work-in-progress shortcuts, and

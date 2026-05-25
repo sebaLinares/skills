@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: stable
+last_reviewed: 2026-05-26
+update_trigger: on-execplan-spec-change
+---
+
 # PLANS.md — ExecPlan specification
 
 This file is the contract for ExecPlans in this repo.

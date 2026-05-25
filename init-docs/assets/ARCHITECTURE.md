@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: living
+last_reviewed: 2026-05-26
+update_trigger: on-module-change
+---
+
 # Architecture
 
 Top-level map of this service. This file is the single source of truth

@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: stable
+last_reviewed: 2026-05-26
+update_trigger: on-security-policy-change
+---
+
 # Security
 
 Current security posture of this service. Intentionally light — will

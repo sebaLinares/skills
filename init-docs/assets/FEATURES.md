@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: living
+last_reviewed: 2026-05-26
+update_trigger: on-feature-added-or-state-change
+---
+
 # Feature ledger
 
 Repo-wide ledger of every user-observable capability this product is

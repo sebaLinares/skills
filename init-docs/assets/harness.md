@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: stable
+last_reviewed: 2026-05-26
+update_trigger: on-harness-change
+---
+
 # Harness — Operating Manual
 
 This is the day-to-day manual for how work gets done in this repo with an AI
@@ -462,6 +469,27 @@ categories in scope.
 
 When the inventory changes, update the ADR — either by amending the "what
 ships in v1" list or by writing a superseding ADR.
+
+### Harness validators
+
+Two stdlib-Python scripts ship at `scripts/harness/` to mechanically
+enforce the documentation contract:
+
+- `check_harness_structure.py` — existence of canonical files, 4-key
+  YAML frontmatter on the markdown subset, required cross-references,
+  no forbidden ephemera under `docs/`, no absolute paths in scanned
+  text. Fail-fast, suitable for pre-commit.
+- `garbage_collect_docs.py` — broken-reference scan, stale-review
+  flag, orphan-doc detection. Slower; suitable for nightly or weekly
+  runs. Renders a markdown report.
+
+Both honour `HARNESS_BYPASS="<reason>"`. The shared manifest lives at
+`scripts/harness/_canonical_manifest.py` — every CHANGELOG entry that
+touches the canonical set updates the manifest in the same entry. See
+[ADR 007 — Harness validators](../decisions/007-harness-validators.md)
+for the design and the explicit non-shipping of Makefile / pre-commit
+/ CI wiring (stack-specific; the contract lives in `dev-setup.md`
+§ Harness validators).
 
 ---
 

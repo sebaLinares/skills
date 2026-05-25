@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: living
+last_reviewed: 2026-05-26
+update_trigger: on-toolchain-change
+---
+
 # Developer setup
 
 Local toolchain and sensors for this service. Fill in the stack-specific
@@ -88,6 +95,38 @@ Activation is opt-in. Installing the hook is a project decision —
 some repos prefer the in-execution gate, some prefer to rely on the
 commit-time sensor alone. The hard constraint applies either way; the
 hook only enforces it mechanically.
+
+## Harness validators
+
+Two stdlib-Python scripts ship at `scripts/harness/`:
+
+- `check_harness_structure.py` — fast structural check. Asserts the
+  canonical files exist, carry the 4-key YAML frontmatter where
+  required, and reference each other where the manifest says they
+  must. No forbidden ephemera, no absolute paths.
+- `garbage_collect_docs.py` — slower audit. Broken-reference scan,
+  metadata staleness (default 90 days), orphan-doc detection,
+  ephemeral-doc detection. Renders a markdown report; `--strict`
+  returns non-zero on warnings too.
+
+Requirements: `python3 ≥ 3.9` on `PATH`. Both scripts honour
+`HARNESS_BYPASS="<reason>"` (same shape as the plan-coverage sensor).
+
+Wiring contract (intentionally not shipped — fill in for this stack):
+
+- **Pre-commit:** invoke `check_harness_structure.py`. Should be the
+  *last* check after the plan-coverage sensor; cheapest first.
+- **CI:** run both validators. `check_harness_structure.py` blocks
+  merge; `garbage_collect_docs.py` writes its report to
+  `docs/generated/harness-gc-report.md` (warn-only on PR, strict on
+  the default branch is a reasonable default).
+- **Nightly / weekly:** invoke `garbage_collect_docs.py --strict`.
+
+Examples (Makefile, pre-commit, GitHub Actions) live in
+[ADR 007 — Harness validators](../decisions/007-harness-validators.md)
+§ Appendix — explicitly marked example-only. Stack-native
+re-implementations (Node, Go, etc.) are acceptable as long as the
+contract documented here is preserved.
 
 ## Common commands
 

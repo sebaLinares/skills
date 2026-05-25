@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: stable
+last_reviewed: 2026-05-26
+update_trigger: on-convention-change
+---
+
 # References
 
 Authoritative specs the code must satisfy, extracted from sources outside

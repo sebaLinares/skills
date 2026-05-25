@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: accepted
+last_reviewed: 2026-05-26
+update_trigger: on-supersession
+---
+
 # 001 — Harness Engineering for AI Agent Usage
 
 ## Status

@@ -1,3 +1,10 @@
+---
+owner: {{REPO_NAME}}
+status: accepted
+last_reviewed: 2026-05-26
+update_trigger: on-supersession
+---
+
 # ADR 003 — Evaluator gate at plan completion
 
 ## Status
