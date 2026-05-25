@@ -84,6 +84,9 @@ and directory the skill would write:
   `docs/generated/README.md`.
 - Subagent configs: `.claude/agents/harness-analyst.md`,
   `.claude/agents/harness-planner.md`.
+- Critic hook: `.claude/hooks/harness-planner-critic-hook.mjs` (tracked
+  in git) and the SubagentStop entry merged into
+  `.claude/settings.local.json` (gitignored, per-contributor).
 
 First, read `.harness-version` at the repo root if it exists. This
 determines the mode (see "Modes of operation" above). If the marker
@@ -345,6 +348,44 @@ Both files are stack-neutral; no substitution.
 These configure the typed design subagents the orchestrator delegates
 to in Phase 2 (analysis synthesis) and Phase 5 (complex ExecPlans) per
 `docs/processes/harness.md` and `AGENTS.md` § Phase gates.
+
+## Step 16b — Wire the harness-planner critic hook
+
+The `codex:adversarial-review` slash command sets
+`disable-model-invocation: true` in the codex-plugin-cc package, which
+means the orchestrator **cannot** invoke it from inside a turn. To
+keep the model-policy step 16 enforceable, ship a SubagentStop hook
+that auto-fires codex when `harness-planner` returns.
+
+1. Copy `assets/harness-planner-critic-hook.mjs` →
+   `.claude/hooks/harness-planner-critic-hook.mjs` in the project
+   root. Create `.claude/hooks/` if absent. `chmod +x` the file.
+   **Tracked in git** — every contributor gets the script.
+
+2. Merge the contents of `assets/claude-settings-local-fragment.json`
+   into the target repo's `.claude/settings.local.json`. Read the
+   existing file if present (parse JSON; `{}` if absent), then
+   additively merge the `hooks.SubagentStop` entry. **Idempotent**:
+   if a SubagentStop entry whose `command` references
+   `harness-planner-critic-hook.mjs` is already present, skip. Write
+   back with two-space indent. **`.claude/settings.local.json` is
+   gitignored** — activation is per-contributor.
+
+3. Verify `.claude/settings.local.json` is covered by the repo's
+   `.gitignore` (search for `.claude/settings.local.json` or the
+   `.claude/` prefix). If the entry is absent, surface in the Step 18
+   report — the user must add it before committing.
+
+Flag in the Step 18 report: "Critic hook script tracked in
+`.claude/hooks/`; activation entry in gitignored
+`.claude/settings.local.json`. Requires `codex-plugin-cc` installed
+locally for the hook to do anything — contributors without it get a
+silent no-op (one stderr line, exit 0)."
+
+The hook fires only on `subagent_type === "harness-planner"` and
+spawns `codex-companion.mjs adversarial-review --background` detached.
+The agent turn is never blocked. Verdict harvest: `/codex:status` then
+`/codex:result <job-id>`.
 
 ## Step 17 — Write `.harness-version`
 

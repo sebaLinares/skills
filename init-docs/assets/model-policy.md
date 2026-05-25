@@ -31,7 +31,7 @@ across scaffolded repos. ADR 004 records the rationale.
 | 13 | Phase 4 broad or irreversible ADRs | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft ADRs with cross-plan or hard-to-reverse scope. |
 | 14 | Phase 5 simple ExecPlan | Orchestrator | Main session | Draft single-module or straightforward plans. |
 | 15 | Phase 5 complex ExecPlan | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft multi-module, high-risk, or irreversible plans. Threshold below. |
-| 16 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review draft plans before human approval. Mandatory on complex plans; skipped on simple. |
+| 16 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review draft plans before human approval. Mandatory on complex plans; skipped on simple. **Auto-invoked** by `.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner` SubagentStop. Manual `/codex:adversarial-review` remains available for ad-hoc use. |
 | 17 | Phase 6 execution | Orchestrator | Main session | Execute approved plan steps and update progress. |
 | 18 | Mid-execution diff sanity | Checker / rescue | `codex:review` | Request when the diff grows broad, risky, or surprising. |
 | 19 | Rescue implementation | Checker / rescue | `codex:rescue` | Use when the orchestrator is stuck or needs an independent implementation attempt. |

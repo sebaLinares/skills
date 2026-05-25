@@ -201,7 +201,14 @@ the typed brief contract.
 `harness-planner` returns the draft, the orchestrator must invoke
 `codex:adversarial-review` on the draft path before handing it to the
 lead. Skipping the critic on a complex plan is a policy violation.
-Simple plans skip this step.
+Simple plans skip this step. This is **auto-invoked** by
+`.claude/hooks/harness-planner-critic-hook.mjs` on the
+`harness-planner` SubagentStop event (requires `codex-plugin-cc`
+installed locally and an entry in `.claude/settings.local.json`).
+The hook spawns codex in `--background` mode; harvest the verdict
+with `/codex:status` then `/codex:result <job-id>`. To bypass per
+contributor, remove the SubagentStop entry from
+`.claude/settings.local.json`.
 
 Phase-5 gate: the lead has read the plan and approved it, and the plan
 satisfies PLANS.md. No code is written before this.

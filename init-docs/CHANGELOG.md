@@ -20,6 +20,97 @@ one entry at a time.
 
 ---
 
+## 2026-05-25 — Auto-critic SubagentStop hook for harness-planner
+
+**What:** Closes the model-policy step 16 hole. The codex plugin's
+`/codex:adversarial-review` slash command sets
+`disable-model-invocation: true`, so the orchestrator structurally
+cannot trigger it from inside a turn — every Phase 5 plan was
+silently skipping the critic. Ships a SubagentStop hook
+(`.claude/hooks/harness-planner-critic-hook.mjs`) that fires only
+when `subagent_type === "harness-planner"`, discovers
+`codex-companion.mjs` under `~/.claude/plugins/`, and Bash-spawns
+`adversarial-review --background` against the newest file in
+`docs/exec-plans/active/`. Detached + unref()'d — the hook returns
+in <100ms; the agent turn is never blocked. Per-contributor
+activation: hook script is tracked in git; the SubagentStop entry
+lives in gitignored `.claude/settings.local.json` so contributors
+without `codex-plugin-cc` installed don't trip a dead reference.
+Updates `assets/model-policy.md` step 16 row and the
+`Pre-approval critic` paragraph in `assets/harness.md` to name the
+hook as the auto-invoker and document the bypass procedure.
+
+**Files touched:** `assets/harness-planner-critic-hook.mjs` (new),
+`assets/claude-settings-local-fragment.json` (new),
+`assets/model-policy.md`, `assets/harness.md`, `SKILL.md`,
+`CHANGELOG.md`.
+
+**How to apply:**
+
+1. If `.claude/hooks/` is absent in the target repo, create it. If
+   `.claude/hooks/harness-planner-critic-hook.mjs` is absent, copy
+   it from
+   `~/.claude/skills/init-docs/assets/harness-planner-critic-hook.mjs`
+   and `chmod +x` the destination. Skip if present.
+   **Do not overwrite** an existing file — flag for user review if
+   the contents differ from the asset.
+
+2. Read the target repo's `.claude/settings.local.json` (parse as
+   JSON; treat absent file as `{}`). Check for a `hooks.SubagentStop`
+   entry whose `command` field contains
+   `harness-planner-critic-hook.mjs`. If absent, additively merge the
+   fragment from
+   `~/.claude/skills/init-docs/assets/claude-settings-local-fragment.json`
+   into the parsed object and write back with two-space indent.
+   Skip if present. Create the file if absent. **Do not touch other
+   keys.** `.claude/settings.local.json` must be gitignored.
+
+3. Check `.gitignore` for a `.claude/settings.local.json` entry (any
+   form). If absent, append it. **Stop with conflict report** if
+   `.gitignore` is missing entirely (the scaffold should already have
+   ensured this elsewhere).
+
+4. In the target repo's `docs/processes/model-policy.md`, locate the
+   step 16 row in the "Per-step assignments" table. Check the Notes
+   column for the substring `auto-invoked`. If absent, replace the
+   row with the version from
+   `~/.claude/skills/init-docs/assets/model-policy.md`. **Stop with
+   conflict report** if the step 16 row is renamed or the column
+   layout changed. Skip if already present.
+
+5. In the target repo's `docs/processes/harness.md`, locate the
+   paragraph beginning `**Pre-approval critic (hard, complex plans
+   only).**` Check for the substring `auto-invoked` in the same
+   paragraph. If absent, append the auto-fire sentence and bypass
+   note from
+   `~/.claude/skills/init-docs/assets/harness.md` to the end of that
+   paragraph. **Stop with conflict report** if the anchor heading or
+   paragraph is renamed. Skip if already present.
+
+**Stack-specific notes:** Hook requires Node on `PATH` (shebang is
+`#!/usr/bin/env node`). Hook requires `codex-plugin-cc` installed
+locally — install with `/plugin marketplace add openai/codex-plugin-cc`
+and the plugin's subsequent install step. The hook fails silently
+(one stderr line, exit 0) when codex isn't present. To bypass per-
+session: temporarily remove or rename
+`.claude/hooks/harness-planner-critic-hook.mjs`; to bypass per-
+contributor: remove the SubagentStop entry from
+`.claude/settings.local.json`.
+
+**Additive/replacing:** additive — one new script, one new fragment
+asset, one step 16 row replacement (semantically the same), one
+appended sentence to the critic paragraph, one `.gitignore` line.
+
+**Conflict risk:** low. Surfaces: a target repo that has already
+defined `hooks.SubagentStop` in `.claude/settings.local.json` for
+something else (step 2 handles via additive array push — but if the
+file's shape is malformed, abort and ask). Step 4 hard-stops on
+renamed/reordered model-policy table; step 5 hard-stops on renamed
+critic paragraph. No edit outside `.claude/`, `docs/processes/`, and
+`.gitignore`.
+
+---
+
 ## 2026-05-24 — Typed design subagents (harness-analyst, harness-planner) with pre-write gates
 
 **What:** Ships two project-level subagent configs under `.claude/agents/`
