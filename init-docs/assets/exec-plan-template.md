@@ -6,6 +6,7 @@ slug: <short-slug>
 analysis: <link to the analysis doc that produced this plan>
 adrs: []
 covers: []  # path prefixes this plan authorises changes to; required when status: approved
+module-count: 0  # count of modules / core infrastructure dirs this plan touches. Crossing the threshold defined in docs/processes/dev-setup.md § Complexity threshold → complex (drafted by harness-planner). See docs/processes/harness.md § Phase 5.
 features: []  # feat-NNN IDs from docs/FEATURES.md this plan delivers; non-optional (non-empty OR pair with feature-less-reason)
 feature-less-reason:  # one line; required iff features is empty (e.g. "pure refactor; no user-observable change")
 ---

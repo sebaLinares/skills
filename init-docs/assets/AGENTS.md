@@ -60,10 +60,85 @@ phase transitions.
   section". This is the worker/checker split applied to plan
   completion.
 - Phase 2 synthesis, phase 4 broad/irreversible ADRs, and phase 5
-  multi-module ExecPlans invoke the design subagent (Opus 4.7 xhigh)
-  per [model policy](docs/processes/model-policy.md). Pre-approval
+  multi-module ExecPlans invoke a typed design subagent (Opus 4.7
+  xhigh) per [model policy](docs/processes/model-policy.md).
+  Phase 2 → `harness-analyst`. Phase 5 → `harness-planner`. Phase 4
+  broad ADRs stay on the generic Opus Task call for now. Pre-approval
   critic and Evaluator passes invoke `codex:adversarial-review` per
   the same policy.
+- "Multi-module" / complex is defined per project in
+  [`docs/processes/dev-setup.md`](docs/processes/dev-setup.md) §
+  Complexity threshold. Borderline cases default to complex.
+- The subagents own the Write to `docs/analysis/...` and
+  `docs/exec-plans/active/...`. The orchestrator never writes to those
+  paths. Any `Write`/`Edit` whose `file_path` matches
+  `^docs/(analysis|exec-plans/active)/` while the orchestrator tier
+  is active is a policy violation: stop, delegate. The orchestrator's
+  role on those paths is limited to (a) constructing the typed brief,
+  (b) editing `docs/README.md` after the subagent returns to add the
+  catalog row.
+- Concrete delegation, copy-pasteable.
+
+  **Phase 2 — analysis doc.** After bootstrap and after identifying
+  the source files relevant to the brief (via `find` / `ls` /
+  `grep -l`, *not* by reading them):
+
+  ```
+  Task(
+    subagent_type="harness-analyst",
+    model="opus",
+    description="Phase 2 — <slug>",
+    prompt="""
+      feature_id: <feat-NNN or feature-less-reason: <one-line>>
+      slug: <kebab-case topic>
+      source_paths:
+        - <repo-relative-path-1>
+        - <repo-relative-path-2>
+    """
+  )
+  ```
+
+  **Phase 5 — ExecPlan (complex only).** After the analysis is
+  approved and you have scoped the `covers:` globs:
+
+  ```
+  Task(
+    subagent_type="harness-planner",
+    model="opus",
+    description="Phase 5 — <slug>",
+    prompt="""
+      feature_id: <feat-NNN or feature-less-reason: <one-line>>
+      slug: <kebab-case>
+      covers:
+        - <path-glob-1>
+        - <path-glob-2>
+      analysis_path: docs/analysis/YYYY-MM-DD_<slug>.md
+    """
+  )
+  ```
+
+  **You must pass `model: "opus"` explicitly in the Task call**, even
+  though each subagent config declares `model: opus` in its
+  frontmatter. The explicit override is belt-and-suspenders:
+  (a) it removes any ambiguity about which model actually runs,
+  (b) the harness-log tail will render the launch as
+  `harness-analyst[opus]` / `harness-planner[opus]` instead of
+  `[default]`, making policy compliance auditable from the log.
+  A launch line showing `[default]` is a policy violation regardless
+  of whether Opus actually ran — fix the Task call.
+
+  Both subagents enforce a typed brief. If any required field is
+  missing, they reply `MISSING_FIELDS: [...]` and refuse to write.
+  Treat that reply as a contract violation on your side: fix the
+  brief and re-invoke. Do not synthesize the missing field from memory.
+
+  Caveat on hook tags: every tool event fired from inside the
+  subagent (its own Reads, Writes, Greps) will still render with the
+  orchestrator's `session_model` as the line prefix. That prefix
+  reflects the parent session's transcript, not the subagent's. The
+  subagent's model is only authoritatively visible in the `SUBAGENT`
+  launch line. Do not interpret in-subagent orchestrator-tier tags as
+  a model violation.
 
 The phase-6 gate is enforced mechanically by a plan-coverage sensor
 wired into the pre-commit hook. The sensor checks that every staged

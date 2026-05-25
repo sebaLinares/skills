@@ -71,6 +71,29 @@ escape hatch for Features the tagged-test convention does not cover
 (e.g. health endpoints, smoke checks). It is fully decoupled from the
 plan-coverage sensor.
 
+## Complexity threshold
+
+*Fill in:* the rule that classifies an ExecPlan as **complex** vs
+**simple**. Phrase it in terms of modules / packages / core
+infrastructure directories the plan touches, so the classification is
+auditable from `module-count:` in the plan frontmatter without
+re-reading the body.
+
+Typical shapes (pick one or write your own):
+
+    ≥2 directories under <modules-root>/, OR
+    ≥2 of <core-infra-dir-1>, <core-infra-dir-2>, <core-infra-dir-3>.
+
+High-risk or irreversible single-module plans (data migrations,
+auth-path rewrites, public-API contract changes) are also complex
+regardless of module count. Borderline cases default to complex.
+
+Complex plans are drafted by the `harness-planner` subagent on Opus
+4.7 xhigh and require a `codex:adversarial-review` pre-approval pass.
+Simple plans stay on the orchestrator with no critic pass. See
+`docs/processes/harness.md` § Phase 5 and
+`docs/processes/model-policy.md` § Complex vs simple ExecPlan threshold.
+
 ## Evaluator convention
 
 Fleet default per `docs/processes/model-policy.md`. Override only if

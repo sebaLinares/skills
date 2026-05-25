@@ -20,6 +20,138 @@ one entry at a time.
 
 ---
 
+## 2026-05-24 — Typed design subagents (harness-analyst, harness-planner) with pre-write gates
+
+**What:** Ships two project-level subagent configs under `.claude/agents/`
+— `harness-analyst` (Phase 2 analysis synthesis) and `harness-planner`
+(Phase 5 complex ExecPlan drafting). Both enforce a typed brief
+contract: missing any required field → subagent replies
+`MISSING_FIELDS: [...]` and refuses to write. The orchestrator owns
+candidate-path identification and brief construction; the subagent owns
+the synthesis Write to `docs/analysis/...` and
+`docs/exec-plans/active/...`. Adds a hard pre-write gate: the
+orchestrator may never Write/Edit those paths (under the complex
+threshold for plans). Pre-approval critic on complex plans becomes
+mandatory. Encodes the binding complexity threshold in
+`docs/processes/dev-setup.md` § Complexity threshold (project-specific
+definition) and audits it via a new `module-count:` ExecPlan frontmatter
+field. Adds copy-pasteable `Task(...)` call shapes to `AGENTS.md` for
+both subagents, including the explicit `model: "opus"` override (so
+harness-log lines render `[opus]` instead of `[default]` and the policy
+is auditable from the log). Documents the hook-tag caveat: in-subagent
+tool events render with the orchestrator's `session_model` prefix; only
+the `SUBAGENT` launch line authoritatively reflects the subagent's
+model.
+
+**Files touched:** `assets/harness-analyst.md` (new),
+`assets/harness-planner.md` (new), `assets/AGENTS.md`,
+`assets/harness.md`, `assets/model-policy.md`,
+`assets/exec-plan-template.md`, `assets/dev-setup.md`, `SKILL.md`,
+`CHANGELOG.md`.
+
+**How to apply:**
+
+1. If `.claude/agents/` is absent in the target repo, create it. If
+   `.claude/agents/harness-analyst.md` is absent, copy it from
+   `~/.claude/skills/init-docs/assets/harness-analyst.md`. Skip if
+   present. Same for `.claude/agents/harness-planner.md`.
+
+2. In the target repo's `AGENTS.md` `## Phase gates` section, locate
+   the bullet starting "Phase 2 synthesis, phase 4 broad/irreversible
+   ADRs, and phase 5 multi-module ExecPlans invoke the design
+   subagent". If it still reads "the design subagent" (singular,
+   untyped), replace it and append the follow-on bullets and the
+   "Concrete delegation, copy-pasteable" subsection with the contents
+   from `~/.claude/skills/init-docs/assets/AGENTS.md`. The new content
+   covers: typed subagent names (`harness-analyst`, `harness-planner`);
+   threshold pointer to `dev-setup.md`; pre-write gate; copy-pasteable
+   `Task(...)` call shapes with the explicit `model: "opus"` override;
+   MISSING_FIELDS contract; hook-tag caveat. Skip if the bullet already
+   reads "a typed design subagent" and the `Task(...)` shapes are
+   already present. **Stop with conflict report** if the bullet has
+   been reworded beyond recognition.
+
+3. In the target repo's `docs/processes/harness.md` § Phase 2, check
+   for the orchestrator/subagent split table immediately after "The
+   investigation produces an analysis doc." If absent, replace the
+   opening paragraph and insert the four-row table (Identify candidate
+   paths / Construct typed brief / Synthesis / Catalog row) with the
+   contents from `~/.claude/skills/init-docs/assets/harness.md`. Then
+   replace the "Synthesis of the analysis doc invokes the design
+   subagent..." paragraph (if still present) with the "Pre-write gate
+   (hard)" paragraph. Skip each individually if already present.
+
+4. In the target repo's `docs/processes/harness.md` § Phase 5, check
+   for the "Complexity threshold (binding)" paragraph and the
+   orchestrator/subagent split table. If absent, replace the "Drafting
+   a multi-module ExecPlan invokes the design subagent" sentence with
+   the `harness-planner` version, then insert the threshold paragraph,
+   the five-row table, the "Pre-write gate (hard)" paragraph, and the
+   "Pre-approval critic (hard, complex plans only)" paragraph from
+   `~/.claude/skills/init-docs/assets/harness.md`. Skip each
+   individually if already present.
+
+5. In the target repo's `docs/processes/model-policy.md`:
+   - Steps 15 and 16 of the per-step table: append "Threshold below."
+     to step 15's Notes column and "Mandatory on complex plans;
+     skipped on simple." to step 16's Notes column if not already
+     present.
+   - Check for a `## Complex vs simple ExecPlan threshold` section
+     between the per-step table and `## Codex commands reference`. If
+     absent, insert it with the contents from
+     `~/.claude/skills/init-docs/assets/model-policy.md`. The section
+     points to `dev-setup.md` for the project-specific definition and
+     names the contract the definition must satisfy.
+
+6. In the target repo's `docs/exec-plans/_template.md` frontmatter,
+   check for a `module-count:` line. If absent, insert it immediately
+   below `covers:` with the comment from
+   `~/.claude/skills/init-docs/assets/exec-plan-template.md`. Skip if
+   present.
+
+7. In the target repo's `docs/processes/dev-setup.md`, check for a
+   `## Complexity threshold` section. If absent, insert it immediately
+   before `## Evaluator convention` with the placeholder contents from
+   `~/.claude/skills/init-docs/assets/dev-setup.md`. Flag it as
+   "needs filling" in the audit report. The section is a placeholder
+   by design — each project supplies its own threshold (typical shapes
+   provided as examples).
+
+**Stack-specific notes:** The complexity-threshold definition is
+intentionally placed in `dev-setup.md` rather than the universal docs
+because the right rule depends on the project's directory layout. The
+ms-search reference implementation uses: "≥2 directories under
+`internal/modules/`, OR ≥2 of `internal/router`, `internal/app`,
+`internal/container`, `internal/config`." Treat as example only —
+NestJS, Python, Rust, or any other layout supplies its own rule
+following the contract in `model-policy.md` § Complex vs simple
+ExecPlan threshold. The `module-count:` frontmatter field is universal;
+only the threshold definition is stack-specific.
+
+**Additive/replacing:** mixed. Additive: two new subagent files, the
+`module-count:` frontmatter field, the `Complex vs simple ExecPlan
+threshold` section in `model-policy.md`, the `Complexity threshold`
+section in `dev-setup.md`, the orchestrator/subagent split tables in
+`harness.md` Phase 2 and Phase 5, the pre-write gate paragraphs, the
+pre-approval critic paragraph, the `Concrete delegation` subsection in
+`AGENTS.md`. Replacing: the "design subagent" wording in `AGENTS.md`
+and `harness.md` Phase 2 and Phase 5 (singular/untyped → typed
+subagent names); two Notes-column cells in `model-policy.md` per-step
+table.
+
+**Conflict risk:** medium. Surfaces: a target repo that has reworded
+the "Phase 2 synthesis, phase 4 broad/irreversible ADRs..." bullet,
+the "Synthesis of the analysis doc invokes the design subagent..."
+sentence, the "Drafting a multi-module ExecPlan invokes the design
+subagent" sentence, or restructured sections in `model-policy.md` /
+`dev-setup.md`. The `AGENTS.md` `Task(...)` insertion is the largest
+single edit; verify the post-insertion structure with a re-read before
+advancing the marker. The `dev-setup.md` insertion point is between
+two named sections — stop and ask if either heading is missing or
+renamed.
+
+---
+
 ## 2026-05-22 — Hard constraints (MUST / MUST NOT) block in AGENTS.md
 
 **What:** Introduces a new top-level section in `AGENTS.md` titled

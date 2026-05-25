@@ -83,9 +83,18 @@ added) — or the brief is explicitly feature-less (refactor, infra, dev-ex).
 
 ### Phase 2 — Investigation
 
-The developer (with their agent) investigates the repo: reads relevant docs by
-tag, scans related code, checks active plans and ADRs for overlap, consults
-external references in `docs/references/`, and produces an analysis doc.
+The investigation produces an analysis doc. It is split between the
+orchestrator (light, on Sonnet) and the `harness-analyst` subagent
+(deep, on Opus). The orchestrator does not read source files itself
+in this phase — it identifies which files are relevant and hands the
+list to the subagent.
+
+| Step | Owner | Action |
+|---|---|---|
+| Identify candidate paths | Orchestrator | `find` / `ls` / `grep -l` for files touched by the brief. **Do not Read them.** |
+| Construct typed brief | Orchestrator | Assemble `feature_id`, `slug`, `source_paths` per `harness-analyst` config. |
+| Synthesis | `harness-analyst` (Opus) | Reads `docs/analysis/_template.md` + `source_paths`. Writes the analysis doc directly. |
+| Catalog row | Orchestrator | Edit `docs/README.md` with the new doc's one-line entry and tags. |
 
 The analysis doc contains:
 
@@ -99,8 +108,11 @@ The analysis doc contains:
 6. **Open questions** — anything the developer cannot resolve alone.
 7. **Risks** — known unknowns, dependencies on other teams, compliance, etc.
 
-Synthesis of the analysis doc invokes the design subagent per
-`docs/processes/model-policy.md`.
+**Pre-write gate (hard).** The orchestrator must never Write or Edit a
+file under `docs/analysis/`. That path belongs to `harness-analyst`.
+Any orchestrator Write to that path is a policy violation. See
+`AGENTS.md` § Phase gates for the concrete `Task(subagent_type="harness-analyst", ...)`
+call shape and the typed brief contract.
 
 Phase-2 gate: analysis doc exists at the path above, is indexed in `docs/README.md`,
 and open questions are explicit. Do not proceed to plan without this.
@@ -157,8 +169,39 @@ field is non-optional — every plan either lists `feat-NNN` IDs from
 `feature-less-reason:`. On approval, every listed Feature transitions
 from `Not started` to `Active` in `FEATURES.md`.
 
-Drafting a multi-module ExecPlan invokes the design subagent. Before approval,
-request a `codex:adversarial-review` pass on the draft per the model policy.
+Drafting a multi-module ExecPlan invokes the `harness-planner`
+subagent. Before approval, request a `codex:adversarial-review` pass
+on the draft per the model policy.
+
+**Complexity threshold (binding).** A plan is *complex* — and therefore
+requires the `harness-planner` subagent — when it crosses the
+project-specific threshold defined in `docs/processes/dev-setup.md` §
+Complexity threshold. Anything below that bar is *simple* and stays
+on the orchestrator. Borderline cases default to complex. Record the
+count in the plan's frontmatter as `module-count: <N>` so the
+classification is auditable.
+
+| Step | Owner | Action |
+|---|---|---|
+| Scope `covers:` | Orchestrator | List the path globs the plan will authorise changes to. |
+| Construct typed brief | Orchestrator | Assemble `feature_id`, `slug`, `covers`, `analysis_path` per `harness-planner` config. |
+| Synthesis | `harness-planner` (Opus) | Reads `docs/PLANS.md`, `docs/exec-plans/_template.md`, the analysis doc(s). Writes the ExecPlan directly. |
+| Catalog row | Orchestrator | Edit `docs/README.md` with the new plan's one-line entry and tags. |
+| Critic pass | Orchestrator | Invoke `codex:adversarial-review` on the draft path. |
+
+**Pre-write gate (hard).** The orchestrator must never Write or Edit a
+file under `docs/exec-plans/active/` for a complex plan. That path
+belongs to `harness-planner`. Any orchestrator Write to that path
+under the complex threshold is a policy violation. Simple plans
+remain orchestrator-written. See `AGENTS.md` § Phase gates for the
+concrete `Task(subagent_type="harness-planner", ...)` call shape and
+the typed brief contract.
+
+**Pre-approval critic (hard, complex plans only).** After
+`harness-planner` returns the draft, the orchestrator must invoke
+`codex:adversarial-review` on the draft path before handing it to the
+lead. Skipping the critic on a complex plan is a policy violation.
+Simple plans skip this step.
 
 Phase-5 gate: the lead has read the plan and approved it, and the plan
 satisfies PLANS.md. No code is written before this.

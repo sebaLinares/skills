@@ -30,14 +30,38 @@ across scaffolded repos. ADR 004 records the rationale.
 | 12 | Phase 4 scoped decisions | Orchestrator | Main session | Record plan-local decisions inline. |
 | 13 | Phase 4 broad or irreversible ADRs | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft ADRs with cross-plan or hard-to-reverse scope. |
 | 14 | Phase 5 simple ExecPlan | Orchestrator | Main session | Draft single-module or straightforward plans. |
-| 15 | Phase 5 complex ExecPlan | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft multi-module, high-risk, or irreversible plans. |
-| 16 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review draft plans before human approval. |
+| 15 | Phase 5 complex ExecPlan | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft multi-module, high-risk, or irreversible plans. Threshold below. |
+| 16 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review draft plans before human approval. Mandatory on complex plans; skipped on simple. |
 | 17 | Phase 6 execution | Orchestrator | Main session | Execute approved plan steps and update progress. |
 | 18 | Mid-execution diff sanity | Checker / rescue | `codex:review` | Request when the diff grows broad, risky, or surprising. |
 | 19 | Rescue implementation | Checker / rescue | `codex:rescue` | Use when the orchestrator is stuck or needs an independent implementation attempt. |
 | 20 | Async result harvest | Checker / rescue | `codex:result` | Collect codex plugin results after async checker or rescue work. |
 | 21 | Completion Evaluator | Checker / rescue | `codex:adversarial-review --base <merge-base>` | Default Evaluator command before moving a plan to `completed/`. |
 | 22 | Session exit and steering loop | Orchestrator | Main session | Run close-out, then route model drift through the steering loop. |
+
+## Complex vs simple ExecPlan threshold
+
+Binding for steps 15 and 16.
+
+The project-specific definition of *complex* lives in
+`docs/processes/dev-setup.md` § Complexity threshold. The contract
+the threshold must satisfy:
+
+- Phrased in terms of modules / packages / core infrastructure files
+  the plan touches — auditable from the plan's `covers:` frontmatter
+  without re-reading the body.
+- High-risk or irreversible single-module plans (data migrations,
+  auth-path rewrites, public-API contract changes) are also complex
+  regardless of module count.
+- Borderline cases default to complex — the design-subagent cost is
+  bounded; a wrong-tier synthesis is not.
+
+Plans declare the count in frontmatter as `module-count: <N>` so the
+classification is auditable from `docs/exec-plans/` without re-reading
+the body.
+
+Anything below the bar is **simple**: drafted by the orchestrator on
+Sonnet, no critic pass required.
 
 ## Codex commands reference
 

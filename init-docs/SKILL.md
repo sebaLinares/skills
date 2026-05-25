@@ -82,6 +82,8 @@ and directory the skill would write:
   `docs/decisions/004-fleet-model-policy.md`,
   `docs/decisions/005-hard-constraints.md`, `docs/references/README.md`,
   `docs/generated/README.md`.
+- Subagent configs: `.claude/agents/harness-analyst.md`,
+  `.claude/agents/harness-planner.md`.
 
 First, read `.harness-version` at the repo root if it exists. This
 determines the mode (see "Modes of operation" above). If the marker
@@ -333,6 +335,16 @@ from code scanning; the point of these files is forcing the user to
 capture context that only they know.
 
 Flag both files in the Step 18 report as "needs filling".
+
+## Step 16a — Write subagent configs
+
+Copy `assets/harness-analyst.md` and `assets/harness-planner.md` to
+`.claude/agents/` in the project root. Create the directory if absent.
+Both files are stack-neutral; no substitution.
+
+These configure the typed design subagents the orchestrator delegates
+to in Phase 2 (analysis synthesis) and Phase 5 (complex ExecPlans) per
+`docs/processes/harness.md` and `AGENTS.md` § Phase gates.
 
 ## Step 17 — Write `.harness-version`
 
