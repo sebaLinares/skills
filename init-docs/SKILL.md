@@ -44,6 +44,13 @@ Ritual:
    verify the entry applies idempotently and advances the marker.
 4. Commit. The pre-commit hook refuses if step 2 is missing.
 
+**Hard-constraint addition rule.** A new MUST / MUST NOT bullet in
+`assets/AGENTS.md` § Hard constraints requires a backing ADR in the
+*same* changelog entry. The citation in the bullet must point at that
+ADR (or at an existing § in `AGENTS.md` / `docs/processes/`). A
+loud-labelled bullet without a citation is malformed — audit mode
+will warn about it (see "Audit mode procedure" → citation check).
+
 Bypass for exceptional commits (typos, experiments, bootstrap):
 
     SKILL_CHANGELOG_BYPASS="<reason>" git commit ...
@@ -87,6 +94,8 @@ and directory the skill would write:
 - Critic hook: `.claude/hooks/harness-planner-critic-hook.mjs` (tracked
   in git) and the SubagentStop entry merged into
   `.claude/settings.local.json` (gitignored, per-contributor).
+- Covers-hook reference: `.claude/hooks/verify-covers-hook.sh` (tracked
+  in git; activation opt-in via `.claude/settings.local.json`).
 
 First, read `.harness-version` at the repo root if it exists. This
 determines the mode (see "Modes of operation" above). If the marker
@@ -387,6 +396,35 @@ spawns `codex-companion.mjs adversarial-review --background` detached.
 The agent turn is never blocked. Verdict harvest: `/codex:status` then
 `/codex:result <job-id>`.
 
+## Step 16c — Ship the covers: hook reference
+
+Copy `assets/verify-covers-hook.sh` → `.claude/hooks/verify-covers-hook.sh`
+in the project root. Create `.claude/hooks/` if absent. `chmod +x` the
+file. **Tracked in git** — every contributor gets the script.
+
+Do **not** auto-register it in `.claude/settings.local.json`.
+Activation is opt-in and **per-contributor** (gitignored
+`.claude/settings.local.json`, not the tracked `.claude/settings.json`)
+— see § Notes on scope → Config-file precedence below. The user wires
+it into the PreToolUse hook list per the install snippet in
+`docs/processes/dev-setup.md` § Pre-tool-use hook (covers:
+enforcement).
+
+This is the reference implementation of the in-execution half of the
+covers: hard constraint (`AGENTS.md` § Hard constraints). The
+pre-commit plan-coverage sensor is still the post-execution gate; this
+hook only catches violations earlier, at the tool call.
+
+The script is stack-neutral (bash + jq). Repos that prefer a
+stack-native version (Node, Python, Go) may swap the script — the
+contract documented in `dev-setup.md` is what matters, not the
+language.
+
+Flag in the Step 18 report: "Covers: hook script tracked in
+`.claude/hooks/verify-covers-hook.sh`. Activation is opt-in — see
+`docs/processes/dev-setup.md` § Pre-tool-use hook for the
+`.claude/settings.json` snippet."
+
 ## Step 17 — Write `.harness-version`
 
 Write a single line to `.harness-version` at the repo root. The value
@@ -433,6 +471,34 @@ and older than the changelog head.
    failed or conflicted, report which one and leave the marker at
    the last successful entry's date.
 
+5. **Hard-constraint citation check (warn-only).** After step 4,
+   re-read the target repo's `AGENTS.md` § Hard constraints (MUST /
+   MUST NOT) block, if present. For each bullet that begins with
+   `**MUST**` or `**MUST NOT**`, verify the bullet body contains
+   either an `ADR NNN` reference or a `§ <section name>` reference.
+   For each bullet missing both, emit a one-line warning in the audit
+   report: `WARN: malformed hard-constraint bullet — "<first 60 chars
+   of bullet>" lacks ADR/§ citation`. **Do not** halt the audit or
+   roll back the marker — citation drift is documentation hygiene,
+   not a contract violation. If the Hard constraints block is absent
+   entirely (older harness without ADR 005 applied), skip silently —
+   the citation check is conditional on the block existing.
+
+6. **Section-order check for AGENTS.md reorders.** When a changelog
+   entry includes an AGENTS.md heading reorder step (e.g. ADR 005's
+   step 4), do the following *before* writing:
+   a. Parse the current top-level heading order in the target
+      repo's `AGENTS.md`.
+   b. Compare against the locked order declared in the entry's
+      "How to apply".
+   c. If they already match, skip the reorder silently (idempotent).
+   d. If they differ, print both orders side-by-side, write
+      `AGENTS.md.bak` as a safety copy, and require explicit user
+      `y/n` before applying. On `n`, skip the reorder and emit it
+      as a "Needs manual merge" item in the audit summary — but
+      still advance the marker (the reorder is the only step
+      pending; the rest of the entry already applied).
+
 **Never** auto-apply "replacing" entries, never merge conflicts
 autonomously, never silently skip steps.
 
@@ -475,17 +541,32 @@ If the `CLAUDE.md` symlink fell back to a copy (Step 15), call it out.
   and belong in a separate skill. The user fills in `dev-setup.md`
   with their stack's hook entrypoint; installing it is a manual or
   separate-skill step.
-- **Sensor documentation is included; sensor scripts are not.**
-  `AGENTS.md`, `PLANS.md`, `harness.md`, and `dev-setup.md` all
+- **Sensor documentation is included; pre-commit sensor scripts are
+  not.** `AGENTS.md`, `PLANS.md`, `harness.md`, and `dev-setup.md` all
   describe the plan-coverage sensor pattern: a pre-commit check that
   reads each approved plan's `covers:` frontmatter and blocks any
-  staged source file not covered. The actual script
-  (`scripts/verify-plan-coverage.sh` or equivalent) is
-  stack-specific and must be implemented after scaffolding. The Go
-  reference implementation lives in the ms-search repo at ADR 003.
+  staged source file not covered. The actual pre-commit script
+  (`scripts/verify-plan-coverage.sh` or equivalent) is stack-specific
+  and must be implemented after scaffolding. The Go reference
+  implementation lives in the ms-search repo at ADR 003.
+- **The PreToolUse covers: hook IS shipped** as a reference (Step
+  16c). It is the in-execution counterpart to the pre-commit sensor —
+  earlier feedback loop, same `covers:` contract. Activation is
+  opt-in; the script is stack-neutral bash + jq and may be swapped.
 - **`ARCHITECTURE.md` and `SECURITY.md` are not pre-filled from code
   scanning.** They intentionally force the user to capture project
   context that scanning can't infer (why the system is shaped this
   way, what the threat model actually is).
 - **The skill never modifies source code** — only documentation and
   root-level markdown files.
+- **Config-file precedence: per-contributor by default.** When a
+  decision arises between `.claude/settings.json` (per-repo, tracked
+  in git) and `.claude/settings.local.json` (per-contributor,
+  gitignored), the latter is chosen. Activation entries for harness
+  hooks (auto-critic SubagentStop, covers: PreToolUse, and any future
+  hooks) land in `.claude/settings.local.json` so each contributor
+  opts in explicitly. The hook *scripts* themselves are tracked in
+  git under `.claude/hooks/`; only the activation entry is
+  per-contributor. Reason: shared tracked activation forces hook
+  behaviour on every contributor (and CI), which is a
+  blast-radius decision the harness should not make autonomously.

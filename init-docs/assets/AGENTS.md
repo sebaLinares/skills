@@ -14,9 +14,15 @@ invisible. When a piece of context is load-bearing, capture it here first.
 ## Hard constraints (MUST / MUST NOT)
 
 These are invariants — they apply at every moment of every phase, not only
-at transitions. Each bullet is loud-labelled and cites the ADR or section
-that justifies it. Distinct from the phase gates below, which fire only at
+at transitions. Distinct from the phase gates below, which fire only at
 phase transitions.
+
+**Block-maintenance rule.** Each bullet MUST be loud-labelled
+(**MUST** / **MUST NOT**) AND cite an ADR (`ADR NNN`) or named section
+(`§ …`). A bullet missing either is malformed — remove it or write the
+ADR. A loud-labelled bullet without a citation is a soft suggestion in
+hard-label clothing, which is worse than no rule at all (see
+[ADR 005](docs/decisions/005-hard-constraints.md) § Consequences).
 
 - **MUST NOT** create a second plan in `docs/exec-plans/active/` while one
   exists. Surface the WIP collision; on user-approved override (hotfix,
@@ -27,7 +33,12 @@ phase transitions.
   execution. If a needed change falls outside, stop and choose: extend
   `covers:` (re-approval required, per Phase 6), log to
   [`docs/tech-debt-tracker.md`](docs/tech-debt-tracker.md), or drop. Never
-  silently widen the diff.
+  silently widen the diff. **Before each Edit/Write tool call, verify the
+  target path prefix-matches `covers:`.** The plan-coverage sensor at
+  pre-commit is the last line of defence, not the first; in-execution
+  self-check is the first. A PreToolUse hook MAY enforce this
+  mechanically — see [`docs/processes/dev-setup.md`](docs/processes/dev-setup.md)
+  § Pre-tool-use hook (covers: enforcement).
   *(See [ADR 001](docs/decisions/001-harness-design.md) and § Phase gates →
   plan-coverage sensor below.)*
 - **MUST NOT** perform opportunistic refactor or cleanup outside the
@@ -199,7 +210,10 @@ substantive output:
    task that names or implies a behavior must map to a Feature row
    (existing or new) before phase 1 can produce an analysis doc.
 2. Read `docs/README.md` — catalog and tag vocabulary.
-3. Scan `docs/exec-plans/active/` — what is in flight.
+3. Scan `docs/exec-plans/active/` — what is in flight. If a plan is
+   present, read its `covers:` frontmatter and keep the glob list in
+   working context so every subsequent Edit/Write can be checked at the
+   call site (per Hard constraints).
 4. Scan `docs/decisions/` — what is already decided.
 5. Note which Features in `docs/FEATURES.md` are `Passing` as the
    baseline for the session-exit verifier dimension.

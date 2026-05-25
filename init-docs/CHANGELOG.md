@@ -20,6 +20,128 @@ one entry at a time.
 
 ---
 
+## 2026-05-25 — Covers: in-execution gate, citation discipline, reorder safety
+
+**What:** Addresses the three negative consequences ADR 005 names —
+constraints-block maintenance rot, the in-execution `covers:` gap, and
+the AGENTS.md reorder risk. Three independent moves bundled into one
+entry because they share a single rationale (close ADR 005's documented
+weak points without changing its decision).
+
+1. **Block-maintenance meta-rule.** Adds a `**Block-maintenance rule.**`
+   paragraph at the top of `AGENTS.md` § Hard constraints requiring
+   every loud-labelled bullet to cite an ADR (`ADR NNN`) or named
+   section (`§ …`). Cites ADR 005 § Consequences for the rationale.
+2. **In-execution covers: check.** Tightens the existing covers:
+   bullet to require a per-tool-call self-check ("Before each
+   Edit/Write tool call, verify the target path prefix-matches
+   `covers:`"). Adds a session-bootstrap step (item 3) instructing the
+   agent to load the active plan's `covers:` glob list into working
+   context. Ships a stack-neutral PreToolUse hook reference at
+   `assets/verify-covers-hook.sh` (bash + jq) and documents the
+   contract in a new `## Pre-tool-use hook (covers: enforcement)`
+   section in `dev-setup.md`. The hook breaks the prior
+   "sensor scripts not shipped" posture — deliberately, with
+   activation kept opt-in. Repos can swap for a stack-native
+   implementation; the contract is what matters.
+3. **Audit-mode safety rails.** Adds two new steps (5 and 6) to the
+   audit procedure: (5) a warn-only citation check on Hard
+   constraints bullets after marker advance; (6) an explicit
+   side-by-side preview + `AGENTS.md.bak` backup + `y/n` gate before
+   any heading reorder. Citation drift never blocks marker advance;
+   reorder refusal still advances the marker but emits the reorder as
+   a "Needs manual merge" item.
+
+Also adds a "Hard-constraint addition rule" paragraph to SKILL.md §
+"How to update this skill" tying new MUST/MUST NOT bullets to
+same-changelog-entry ADRs, and a "Config-file precedence" bullet to
+SKILL.md § Notes on scope declaring that hook activation entries
+land in `.claude/settings.local.json` (per-contributor, gitignored),
+never in tracked `.claude/settings.json`. Tie-breaker rule for any
+future config-file decision: per-contributor wins. Hook *scripts*
+remain tracked in git; only the activation entry is per-contributor.
+
+**Files touched:** `assets/AGENTS.md`, `assets/dev-setup.md`,
+`assets/verify-covers-hook.sh` (new), `SKILL.md`, `CHANGELOG.md`.
+
+**How to apply:**
+
+1. If `.claude/hooks/verify-covers-hook.sh` is absent in the target
+   repo, copy it from
+   `~/.claude/skills/init-docs/assets/verify-covers-hook.sh` and
+   `chmod +x` it. Create `.claude/hooks/` if absent. Skip if present.
+   Do **not** modify `.claude/settings.local.json` — activation is
+   opt-in per project.
+
+2. In the target repo's `AGENTS.md` § Hard constraints (MUST / MUST
+   NOT), check for a paragraph beginning `**Block-maintenance rule.**`.
+   If absent, replace the existing intro paragraph (currently begins
+   "These are invariants" and ends "phase transitions.") with the
+   two-paragraph block from
+   `~/.claude/skills/init-docs/assets/AGENTS.md`: the unchanged
+   "These are invariants…" sentence plus the new "Block-maintenance
+   rule" paragraph. Skip if already present. **Stop with conflict
+   report** if the § Hard constraints heading is missing — the
+   harness predates ADR 005 and must run that entry's audit first.
+
+3. In the same `## Hard constraints` block, locate the **MUST NOT**
+   bullet about editing outside `covers:`. Check for the sentence
+   "Before each Edit/Write tool call, verify the target path
+   prefix-matches `covers:`." If absent, replace the bullet body with
+   the updated version from
+   `~/.claude/skills/init-docs/assets/AGENTS.md` (adds the
+   pre-call-check sentence and the pointer to `dev-setup.md`
+   § Pre-tool-use hook). Skip if the new sentence is already present.
+   **Stop with conflict report** if the bullet has been reworded
+   beyond recognition.
+
+4. In the target repo's `AGENTS.md` § Session bootstrap, locate item 3
+   ("Scan `docs/exec-plans/active/` — what is in flight."). If it
+   does not already mention loading `covers:` into working context,
+   replace it with the expanded version from
+   `~/.claude/skills/init-docs/assets/AGENTS.md`. Skip if the
+   `covers:` glob-load sentence is already present.
+
+5. In the target repo's `docs/processes/dev-setup.md`, check for a
+   `## Pre-tool-use hook (covers: enforcement)` heading. If absent,
+   insert the section between `## Pre-commit hook` and
+   `## Common commands` with the contents from
+   `~/.claude/skills/init-docs/assets/dev-setup.md`. Skip if present.
+   **Stop with conflict report** if either neighbouring heading is
+   renamed or missing.
+
+**Stack-specific notes:** The reference hook is bash + jq. Repos
+without jq, or that prefer a stack-native implementation (Node hook,
+Python hook, Go hook), may swap the script entirely — the contract
+documented in `dev-setup.md` § Pre-tool-use hook is what the harness
+relies on, not the language. The `.claude/hooks/` placement follows
+the Claude Code project-local convention; agents that use a different
+hook directory should adjust the path in both the script and the
+install snippet. The activation entry lands in
+`.claude/settings.local.json` (per-contributor, gitignored) — never
+in tracked `.claude/settings.json` — per the new SKILL.md § Notes on
+scope → Config-file precedence rule. Entry is deliberately not
+auto-merged either way: contributors opt in explicitly.
+
+**Additive/replacing:** mixed. Additive: one new script, one new
+`dev-setup.md` section, one new SKILL.md scaffold step (16c), two new
+SKILL.md audit-mode steps (5 and 6), one new SKILL.md "How to update"
+paragraph. Replacing: the Hard constraints intro paragraph, the
+covers: bullet body, the bootstrap item 3.
+
+**Conflict risk:** medium. Surfaces: a target repo whose ADR 005 hard
+constraints block has been edited (reworded covers: bullet, removed
+intro paragraph), or whose `dev-setup.md` has reorganised the
+`## Pre-commit hook` / `## Common commands` boundary. The three
+replacing edits are all phrase-level and idempotent (check for the
+new sentence before writing). The biggest single edit is the
+`dev-setup.md` insertion (new section). All conflicts halt the audit
+and leave the marker at the previous entry; the citation check (audit
+step 5) and reorder gate (audit step 6) only fire on subsequent
+audits after this entry applies.
+
+---
+
 ## 2026-05-25 — Auto-critic SubagentStop hook for harness-planner
 
 **What:** Closes the model-policy step 16 hole. The codex plugin's

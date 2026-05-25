@@ -40,6 +40,55 @@ covered by an approved plan. Implementation is stack-specific; see
 bypass env var (`HARNESS_BYPASS="<reason>"`) that skips *only* the
 coverage check while leaving other pre-commit checks in place.
 
+## Pre-tool-use hook (covers: enforcement)
+
+The covers: hard constraint (`AGENTS.md` § Hard constraints) requires
+that every Edit/Write target prefix-match an active plan's `covers:`
+*at the call site* — not just at commit. The pre-commit plan-coverage
+sensor is the last line of defence; this hook is the first.
+
+The reference implementation ships at
+`.claude/hooks/verify-covers-hook.sh` (bash + jq, stack-neutral). To
+activate, register it in `.claude/settings.local.json`
+(**per-contributor**, gitignored — not `.claude/settings.json`):
+
+    {
+      "hooks": {
+        "PreToolUse": [
+          {
+            "matcher": "Edit|Write|MultiEdit",
+            "hooks": [
+              { "type": "command",
+                "command": ".claude/hooks/verify-covers-hook.sh" }
+            ]
+          }
+        ]
+      }
+    }
+
+Per-contributor activation by default — see SKILL.md § Notes on
+scope → Config-file precedence for the fleet rule.
+
+Hook contract (re-implement in any language; bash is reference, not
+required):
+
+- Read PreToolUse JSON from stdin.
+- If `tool_name` is not Edit/Write/MultiEdit → exit 0 (allow).
+- If `tool_input.file_path` is under `docs/` or is a root anchor
+  (`AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `SECURITY.md`,
+  `README.md`) → exit 0 (always allowed).
+- For each plan in `docs/exec-plans/active/*.md`, parse the `covers:`
+  YAML list. If the target path prefix-matches any glob → exit 0.
+- Otherwise → write a remediation message to stderr and exit non-zero
+  (Claude Code reads stderr and surfaces the rejection to the agent).
+- Bypass via `HARNESS_BYPASS="<reason>"` env var. Mirrors the
+  pre-commit sensor's bypass shape.
+
+Activation is opt-in. Installing the hook is a project decision —
+some repos prefer the in-execution gate, some prefer to rely on the
+commit-time sensor alone. The hard constraint applies either way; the
+hook only enforces it mechanically.
+
 ## Common commands
 
 *Fill in the table with the commands a new developer runs day-to-day.*
