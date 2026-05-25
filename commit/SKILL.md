@@ -7,7 +7,29 @@ description: Generate and run a git commit after completing work. Use this skill
 
 Inspect the working tree in `pwd`, generate a Conventional Commit message via a cheap subagent, and run `git commit`.
 
-## Step 1 — Check for changes in pwd
+## Step 1 — Detect context, then check for changes
+
+**1a. Detect working tree context**
+
+```bash
+git rev-parse --show-toplevel
+git rev-parse --abbrev-ref HEAD
+git worktree list --porcelain
+```
+
+Parse `git worktree list --porcelain` to find which entry's `worktree` field matches `show-toplevel`. The first entry is always the main (non-linked) worktree.
+
+Surface one line of context before doing anything else:
+
+| Situation | Output |
+|---|---|
+| `pwd` resolves to a linked worktree | `↳ Worktree: <branch> at <path>` |
+| main worktree, branch is `main` or `master` | `⚠ Branch: main` |
+| main worktree, any other branch | `Branch: <branch>` |
+
+No blocking. No confirmation. Continue immediately.
+
+**1b. Check for changes**
 
 ```bash
 git status --short 2>/dev/null
