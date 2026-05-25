@@ -25,9 +25,14 @@ during plan execution are promoted to ADRs in `docs/decisions/`;
 plan-scoped decisions stay inline in the plan's Decision Log.
 
 Plan drafting follows the fleet model policy in
-`docs/processes/model-policy.md` — multi-module or irreversible plans are
-drafted by the design subagent; the pre-approval critic pass is
-`codex:adversarial-review`.
+`docs/processes/model-policy.md` — every plan is drafted by the
+`harness-planner` design subagent (Opus 4.7 xhigh) and passes through the
+pre-approval critic before the lead approves it. The default critic command
+is `codex:adversarial-review`; the hook invokes the underlying
+`codex-companion.mjs adversarial-review` script directly because the slash
+command sets `disable-model-invocation: true`. The verdict lands in the
+plan's `## Pre-approval critic transcript` section. See
+[ADR 006](decisions/006-pre-approval-critic-gate.md).
 
 ## Frontmatter
 
@@ -98,6 +103,52 @@ State-machine consequences:
 The `features:` field has no interaction with the plan-coverage sensor
 — that sensor reads `covers:` paths only and is unaware of
 `FEATURES.md`.
+
+### The `Pre-approval critic transcript` section
+
+No plan moves from `status: draft` to `status: approved` without an
+independent **Pre-approval critic** pass. The critic is a coding agent or
+tool that does **not** share state with the plan's worker — a fresh
+subagent, separate session, external CLI agent, or human reviewer.
+Independence is structural: same agent, same session, same context does not
+qualify. See ADR 006 for the why.
+
+**Invocation contract.** The default critic is `codex:adversarial-review`
+(the slash command name), auto-fired by
+`.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner`
+SubagentStop. The hook invokes the underlying `codex-companion.mjs
+adversarial-review` script directly via Node — the slash command itself
+sets `disable-model-invocation: true` and cannot be reached from inside an
+agent turn. The hook runs the critic synchronously and writes the verdict
+directly into the plan's `## Pre-approval critic transcript` section. The
+worker never edits that section. When `codex-plugin-cc` is unavailable or
+the critic crashes, the hook writes a `BLOCKED: <reason>` placeholder in
+the same section so the gate fires loudly rather than silently.
+
+**Verdict shape.** Free-form prose. Unlike the Evaluator's structured
+Alignment + Acceptance verdicts, the critic's purpose is *challenge*, not
+adjudication: hidden assumptions, sequencing issues, rollback gaps, and
+"is the chosen approach correct" questions. The lead reads the section
+and decides whether the challenges materially affect the plan.
+
+**Block shape.** Each critic invocation appends a block of this form:
+
+    **Run N — YYYY-MM-DD HH:MMZ — <critic-cmd>**
+
+    <verdict body — prose>
+
+Retries (after the plan is revised) append new timestamped blocks; history
+is preserved.
+
+**Approval rule.** The lead does not approve a plan while the section is
+empty or contains only BLOCKED placeholders. A BLOCKED placeholder is a
+visible signal that the critic has not actually run — install
+`codex-plugin-cc`, run the critic out-of-band, or paste a manual verdict
+before requesting approval.
+
+**Feature-less plans get the same gate.** Refactors and infra plans are
+equally prone to design flaws; the critic confirms an independent reader
+has actually challenged the approach.
 
 ### The `Evaluator transcript` section
 
@@ -205,10 +256,14 @@ proceeds. The starting skeleton is in
   risky or destructive steps, specify explicit rollback.
 - **Artifacts and Notes** — important transcripts, diffs, or snippets
   as indented examples. Concise, focused on proof of success.
+- **Pre-approval critic transcript** — verdicts from the independent
+  Pre-approval critic pass that gates the `draft` → `approved` transition.
+  Written by the critic only; the worker never edits this section. See
+  "The `Pre-approval critic transcript` section" above for the contract.
 - **Evaluator transcript** — verdicts from the independent Evaluator
   pass that gates the `active/` → `completed/` transition. Written by
   the Evaluator only; the worker never edits this section. See "The
-  `Evaluator transcript` section" below for the contract.
+  `Evaluator transcript` section" above for the contract.
 - **Interfaces and Dependencies** — libraries, modules, and services to
   use and why. Types, interfaces, and function signatures that must
   exist at the end of the milestone. Prefer stable, repository-relative

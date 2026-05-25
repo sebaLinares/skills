@@ -169,49 +169,46 @@ field is non-optional — every plan either lists `feat-NNN` IDs from
 `feature-less-reason:`. On approval, every listed Feature transitions
 from `Not started` to `Active` in `FEATURES.md`.
 
-Drafting a multi-module ExecPlan invokes the `harness-planner`
-subagent. Before approval, request a `codex:adversarial-review` pass
-on the draft per the model policy.
-
-**Complexity threshold (binding).** A plan is *complex* — and therefore
-requires the `harness-planner` subagent — when it crosses the
-project-specific threshold defined in `docs/processes/dev-setup.md` §
-Complexity threshold. Anything below that bar is *simple* and stays
-on the orchestrator. Borderline cases default to complex. Record the
-count in the plan's frontmatter as `module-count: <N>` so the
-classification is auditable.
+Drafting an ExecPlan invokes the `harness-planner` subagent. The
+pre-approval critic auto-fires when the subagent returns and writes
+its verdict into the plan's `## Pre-approval critic transcript`
+section. See [ADR 006](../decisions/006-pre-approval-critic-gate.md).
 
 | Step | Owner | Action |
 |---|---|---|
 | Scope `covers:` | Orchestrator | List the path globs the plan will authorise changes to. |
 | Construct typed brief | Orchestrator | Assemble `feature_id`, `slug`, `covers`, `analysis_path` per `harness-planner` config. |
 | Synthesis | `harness-planner` (Opus) | Reads `docs/PLANS.md`, `docs/exec-plans/_template.md`, the analysis doc(s). Writes the ExecPlan directly. |
+| Critic pass | Hook (synchronous) | `harness-planner-critic-hook.mjs` invokes `codex-companion.mjs adversarial-review` on SubagentStop (slash command is user-only), writes verdict into `## Pre-approval critic transcript`. |
 | Catalog row | Orchestrator | Edit `docs/README.md` with the new plan's one-line entry and tags. |
-| Critic pass | Orchestrator | Invoke `codex:adversarial-review` on the draft path. |
 
 **Pre-write gate (hard).** The orchestrator must never Write or Edit a
-file under `docs/exec-plans/active/` for a complex plan. That path
-belongs to `harness-planner`. Any orchestrator Write to that path
-under the complex threshold is a policy violation. Simple plans
-remain orchestrator-written. See `AGENTS.md` § Phase gates for the
-concrete `Task(subagent_type="harness-planner", ...)` call shape and
-the typed brief contract.
+file under `docs/exec-plans/active/`. That path belongs to
+`harness-planner`. Any orchestrator Write to that path is a policy
+violation. See `AGENTS.md` § Phase gates for the concrete
+`Task(subagent_type="harness-planner", ...)` call shape and the typed
+brief contract.
 
-**Pre-approval critic (hard, complex plans only).** After
-`harness-planner` returns the draft, the orchestrator must invoke
-`codex:adversarial-review` on the draft path before handing it to the
-lead. Skipping the critic on a complex plan is a policy violation.
-Simple plans skip this step. This is **auto-invoked** by
-`.claude/hooks/harness-planner-critic-hook.mjs` on the
-`harness-planner` SubagentStop event (requires `codex-plugin-cc`
-installed locally and an entry in `.claude/settings.local.json`).
-The hook spawns codex in `--background` mode; harvest the verdict
-with `/codex:status` then `/codex:result <job-id>`. To bypass per
+**Pre-approval critic (hard).** Every ExecPlan passes through the
+pre-approval critic before the lead approves it. The critic is
+**auto-invoked** by `.claude/hooks/harness-planner-critic-hook.mjs`
+on the `harness-planner` SubagentStop event. The hook runs codex
+synchronously (the agent's turn pauses for the critic run, typically
+30–90s) and writes the verdict directly into the plan's
+`## Pre-approval critic transcript` section. When `codex-plugin-cc`
+is unavailable or the critic crashes, the hook writes a
+`BLOCKED: <reason>` placeholder into the same section instead of a
+verdict. The lead does not approve a plan whose critic transcript is
+empty or BLOCKED — install the plugin, run the critic out-of-band,
+or paste a manual verdict before requesting approval. To bypass per
 contributor, remove the SubagentStop entry from
-`.claude/settings.local.json`.
+`.claude/settings.local.json` (the named-section gate still
+applies; manual population is required).
 
-Phase-5 gate: the lead has read the plan and approved it, and the plan
-satisfies PLANS.md. No code is written before this.
+Phase-5 gate: the lead has read the plan, the
+`## Pre-approval critic transcript` section contains a non-BLOCKED
+verdict, and the plan satisfies PLANS.md. No code is written before
+this.
 
 The pre-commit hook contains a plan-coverage sensor. The sensor reads
 each completed plan's `covers:` frontmatter (see `docs/PLANS.md`) and
@@ -309,15 +306,23 @@ the assignments most likely to affect phase gates.
 | Default orchestration | Sonnet 4.6 high | Main session |
 | Phase 2 analysis synthesis | Opus 4.7 xhigh | Claude Task tool |
 | Phase 4 broad or irreversible ADRs | Opus 4.7 xhigh | Claude Task tool |
-| Phase 5 complex or multi-module ExecPlans | Opus 4.7 xhigh | Claude Task tool |
-| Pre-approval critic | GPT-5.5 high via codex plugin | `codex:adversarial-review` |
-| Mid-execution diff sanity | GPT-5.5 high via codex plugin | `codex:review` |
-| Rescue implementation | GPT-5.5 high via codex plugin | `codex:rescue` |
-| Completion Evaluator | GPT-5.5 high via codex plugin | `codex:adversarial-review --base <merge-base>` |
+| Phase 5 ExecPlans (all plans) | Opus 4.7 xhigh | Claude Task tool |
+| Pre-approval critic | GPT-5.5 high via codex plugin | Auto-fired by `.claude/hooks/harness-planner-critic-hook.mjs` → `codex-companion.mjs adversarial-review` |
+| Mid-execution diff sanity | GPT-5.5 high via codex plugin | `Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" review)` |
+| Rescue implementation | GPT-5.5 high via codex plugin | `Agent(subagent_type="codex:codex-rescue", …)` |
+| Completion Evaluator | GPT-5.5 high via codex plugin | `Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" adversarial-review --base <merge-base>)` |
 
 If the codex plugin is unavailable, follow the fallback chain in
 `docs/processes/model-policy.md`; do not silently treat the main session as an
 independent checker.
+
+The codex-plugin-cc slash commands (`/codex:review`,
+`/codex:adversarial-review`, `/codex:result`, etc.) set
+`disable-model-invocation: true`. The orchestrator therefore invokes the
+underlying `codex-companion.mjs` script via Bash for review and adversarial
+review, and uses the `Agent` tool with `subagent_type="codex:codex-rescue"`
+for rescue. See `docs/processes/model-policy.md` § Codex commands reference
+for the full mapping.
 
 ---
 

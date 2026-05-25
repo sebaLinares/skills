@@ -20,6 +20,393 @@ one entry at a time.
 
 ---
 
+## 2026-05-25 — Codex slash commands replaced with script-invocation forms; Evaluator focus reframed
+
+**What:** The codex-plugin-cc slash commands (`/codex:review`,
+`/codex:adversarial-review`, `/codex:result`, etc.) set
+`disable-model-invocation: true` — they are user-only and the orchestrator
+cannot reach them from inside a turn. The harness docs previously named those
+slash literals as the orchestrator's tools for Steps 17 (diff sanity), 18
+(rescue), 19 (result harvest), and 20 (Completion Evaluator), which were
+mechanically unactionable. The pre-approval critic hook (ADR 006) already
+worked around this by spawning `codex-companion.mjs adversarial-review`
+directly; this entry extends the same pattern to the orchestrator-driven
+usages: Bash → `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs"
+<subcommand>` for review/adversarial-review/result, and
+`Agent(subagent_type="codex:codex-rescue", …)` for rescue (the rescue
+slash command forwards to that subagent, which the orchestrator *can*
+invoke via the `Agent` tool).
+
+Also reframes the Completion Evaluator's focus text in adversarial terms.
+The Evaluator's job is conformance verification (Alignment + Acceptance
+against the plan), but `/codex:review` accepts no focus text or plan path,
+so it cannot carry the Evaluator's instruction template. The harness uses
+`adversarial-review` for its steerability and reframes the prompt as
+"challenge the worker's claim that the diff is done; pressure-test the
+Acceptance evidence." A new `## Tool selection` section in ADR 003
+records the trade-off and treats codex-plugin-cc as fixed external
+tooling (no upstream feature request implied).
+
+Renames `codex:rescue` to `codex:codex-rescue` everywhere the harness
+names a tool — the slash command is user-only; the subagent is the
+orchestrator-callable surface.
+
+**Files touched:** `assets/model-policy.md`, `assets/harness.md`,
+`assets/dev-setup.md`, `assets/003-evaluator-gate.md`, `assets/AGENTS.md`,
+`assets/PLANS.md`, `assets/006-pre-approval-critic-gate.md`,
+`assets/004-fleet-model-policy.md`, `CONTEXT.md`, `SKILL.md`,
+`CHANGELOG.md`.
+
+**How to apply:**
+
+1. In the target repo's `docs/processes/model-policy.md` per-step
+   assignments table, locate rows 17 (Mid-execution diff sanity), 18
+   (Rescue implementation), 19 (Async result harvest), and 20
+   (Completion Evaluator). Replace each row's Invocation column with
+   the script-invocation / Agent-tool form from
+   `~/.claude/skills/init-docs/assets/model-policy.md`. The substring
+   to look for in the current file is the bare slash literal
+   (`codex:review`, `codex:rescue`, `codex:result`,
+   `codex:adversarial-review --base <merge-base>`); replace with the
+   Bash / Agent invocation form. Skip each row individually if already
+   updated. **Stop with conflict report** if any of rows 17–20 are
+   renamed or the column layout has changed.
+
+2. In the same file, replace the `## Codex commands reference` section
+   body with the expanded version from the asset (explains slash-command
+   limitation, names the two dispatch paths, lists the four roles).
+   The trigger is the presence of the bare bullets
+   `- `codex:rescue` — independent implementation attempt…`; the
+   replacement carries the same role descriptions plus the dispatch
+   explanation. Skip if the new wording (`dispatch path` or
+   `Agent tool with subagent_type`) is already present.
+
+3. In the same file, change `\`codex:rescue\` has no good fallback` to
+   `\`codex:codex-rescue\` has no good fallback` in the Fallback
+   subsection. Skip if already updated.
+
+4. In the target repo's `docs/processes/harness.md` § Model assignments
+   table, locate the four rows (Pre-approval critic, Mid-execution diff
+   sanity, Rescue implementation, Completion Evaluator) and replace
+   each Command column with the dispatch form from
+   `~/.claude/skills/init-docs/assets/harness.md`. Trigger: bare
+   `codex:` slash literal in the Command column. Skip per-row if
+   already updated.
+
+5. In the same `harness.md`, append the "The codex-plugin-cc slash
+   commands... set `disable-model-invocation: true`" paragraph
+   immediately after the "If the codex plugin is unavailable, follow
+   the fallback chain..." paragraph in § Model assignments. Skip if
+   the paragraph is already present (search for
+   `disable-model-invocation`).
+
+6. In the same `harness.md` § Phase 5, locate the Critic-pass row of
+   the step table. Replace `fires codex:adversarial-review` with
+   `invokes codex-companion.mjs adversarial-review` and add the
+   `(slash command is user-only)` parenthetical. Skip if already
+   updated.
+
+7. In the target repo's `docs/processes/dev-setup.md` § Evaluator
+   convention, replace the `evaluator-cmd: codex:adversarial-review ...`
+   line and the focus-text comment with the multi-line block from the
+   asset (Bash invocation + adversarial-verification focus text). Skip
+   if `codex-companion.mjs adversarial-review` is already present.
+
+8. In the same `dev-setup.md`, check for a `### Tool resolution`
+   subsection under `## Evaluator convention`. If absent, insert it
+   from the asset immediately after the new focus-text block and
+   before the *Independence assertion* paragraph. Skip if present.
+   **Stop with conflict report** if `## Evaluator convention` has been
+   renamed.
+
+9. In the target repo's `docs/decisions/003-evaluator-gate.md`, check
+   for a `## Tool selection` section between `## Decision` and
+   `## Consequences`. If absent, insert the four-paragraph block from
+   `~/.claude/skills/init-docs/assets/003-evaluator-gate.md`
+   (explains the slash-command limitation, why `adversarial-review`
+   over `review`, the focus-text reframe, and the codex-plugin-fixed
+   note). Skip if present. **Stop with conflict report** if either
+   neighbouring heading is renamed.
+
+10. In the target repo's `AGENTS.md` § Phase gates, locate the
+    bullet ending `Pre-approval critic and Evaluator passes invoke
+    \`codex:adversarial-review\` per the same policy.` Replace the
+    final sentence with the auto-fired / orchestrator-invoked
+    distinction from the asset (cites
+    `docs/processes/model-policy.md` § Codex commands reference).
+    Skip if `auto-fired` and `slash command is user-only` are both
+    present.
+
+11. In the target repo's `docs/PLANS.md`, two phrase-level inserts:
+    - In `## How ExecPlans fit into the harness`, after `The default
+      critic command is \`codex:adversarial-review\`;`, insert ` the
+      hook invokes the underlying \`codex-companion.mjs
+      adversarial-review\` script directly because the slash command
+      sets \`disable-model-invocation: true\`.` Skip if already
+      present.
+    - In `### The Pre-approval critic transcript section` →
+      `**Invocation contract.**`, replace `The default critic is
+      \`codex:adversarial-review\`, auto-fired by...` with the
+      expanded version from the asset (names the
+      `disable-model-invocation` flag and the Node script call).
+      Skip if `disable-model-invocation` already appears in the
+      paragraph.
+
+12. In the target repo's `docs/decisions/006-pre-approval-critic-gate.md`
+    § Decision → **Default tool**, replace the paragraph with the
+    asset version (notes the slash-command restriction and that the
+    hook invokes the underlying script). Skip if
+    `disable-model-invocation` already appears in the paragraph.
+
+13. In the target repo's `docs/decisions/004-fleet-model-policy.md`
+    § Decision, replace `The default Evaluator command is
+    \`codex:adversarial-review --base <merge-base>\`.` with the asset
+    sentence (resolves to `codex-companion.mjs ...` via Bash;
+    explains slash-command restriction). Skip if
+    `codex-companion.mjs` already appears.
+
+14. In the target repo's `docs/processes/CONTEXT.md` (or wherever the
+    target keeps its glossary), update the **Pre-approval critic** and
+    **Checker / rescue tier** entries to the asset versions
+    (script-invocation parenthetical for the critic;
+    `codex:codex-rescue` subagent name + Agent-tool dispatch note for
+    the rescue tier). Skip each entry individually if already updated.
+
+**Stack-specific notes:** None. The
+`${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs` path resolves
+identically on every machine with codex-plugin-cc installed; the
+hook's `find ~/.claude/plugins/ -name codex-companion.mjs` discovery
+fallback (used only inside the hook, where `CLAUDE_PLUGIN_ROOT` is
+unpopulated) is portable across macOS and Linux.
+
+**Additive/replacing:** mostly additive (phrase-level inserts and a
+new ADR-003 § Tool selection section). Replacing: model-policy.md
+rows 17–20 and the `## Codex commands reference` body; harness.md
+four-row Command column and the Phase-5 Critic-pass row;
+dev-setup.md `evaluator-cmd` line and focus-text comment; AGENTS.md
+final sentence of the critic+Evaluator bullet; PLANS.md
+**Invocation contract** paragraph; ADR-006 **Default tool**
+paragraph; ADR-004 Evaluator-command sentence; CONTEXT.md two
+glossary entries.
+
+**Conflict risk:** low to medium. The Evaluator focus-text reframe in
+dev-setup.md is the largest single change in spirit (not in lines)
+— a project that has hand-edited the focus text will see a full
+overwrite. Step 7 covers this with a skip-if-present check, but
+projects with bespoke focus-text wording should review the diff
+before accepting. All other edits are phrase-level and idempotent.
+The ADR-003 § Tool selection insertion (step 9) hard-stops on
+missing or renamed neighbouring headings.
+
+---
+
+## 2026-05-25 — Pre-approval critic gate (ADR 006); complexity threshold removed
+
+**What:** Collapses the simple/complex ExecPlan threshold. Every plan now
+flows through the `harness-planner` Opus 4.7 xhigh subagent and through the
+pre-approval critic — no exceptions, no project-defined threshold,
+no `module-count:` frontmatter. The threshold's ambiguity (single-module
+high-risk surfaces, borderline-defaults-to-complex judgment calls) could
+leave a high-stakes plan uncriticised; ADR 006 closes the gap by making
+the worker/checker split unconditional at draft → approved, matching the
+pattern ADR 003 already established at active → completed.
+
+Introduces a new `## Pre-approval critic transcript` section in every
+ExecPlan, structurally parallel to `## Evaluator transcript`. The
+auto-critic hook is reshaped from background-detached to synchronous: the
+agent's turn pauses for the critic run (typically 30–90s, hard-capped at
+10 minutes) and the verdict is written directly into the named section
+using the standard run-block format. Failure modes — codex-plugin-cc
+missing, codex crash, timeout, non-zero exit, empty stdout — write a
+`BLOCKED: <reason>` placeholder into the section instead of a verdict.
+The lead's approval gate refuses any plan whose critic section is empty
+or BLOCKED, making the gap visible at review time rather than silent.
+
+Phase 4 ADRs are unaffected — the lead remains the canonical checker for
+decision documents; extending the critic to ADRs would produce noise that
+trains the lead to ignore the gate.
+
+**Files touched:** `assets/006-pre-approval-critic-gate.md` (new),
+`assets/PLANS.md`, `assets/exec-plan-template.md`, `assets/harness.md`,
+`assets/AGENTS.md`, `assets/model-policy.md`, `assets/dev-setup.md`,
+`assets/harness-planner-critic-hook.mjs`, `SKILL.md`, `CONTEXT.md`,
+`CHANGELOG.md`.
+
+**How to apply:**
+
+1. Check the target repo's `docs/decisions/` for any ADR titled
+   "Pre-approval critic gate" (any number). If absent, find the next
+   available `NNN` — default `006` if free, otherwise the next free
+   number — and copy
+   `~/.claude/skills/init-docs/assets/006-pre-approval-critic-gate.md`
+   to `docs/decisions/NNN-pre-approval-critic-gate.md`. If `NNN ≠ 006`,
+   rewrite the heading `# ADR 006 — …` and every in-body `ADR 006`
+   mention to the chosen number. Record the chosen NNN for steps 7 and 11.
+
+2. In the target repo's `docs/exec-plans/_template.md` frontmatter,
+   check for a `module-count:` line. If present, delete it. Skip if
+   absent. **Stop with conflict report** if the line has been reworded
+   beyond the original template shape.
+
+3. In the same `_template.md`, check the section list for
+   `## Pre-approval critic transcript`. If absent, insert the section
+   (with the "Written by the Pre-approval critic only…" stub and
+   `_No runs yet._` placeholder) immediately before
+   `## Evaluator transcript`. Source:
+   `~/.claude/skills/init-docs/assets/exec-plan-template.md`. Skip if
+   present.
+
+4. In the target repo's `docs/PLANS.md`:
+   - In `## How ExecPlans fit into the harness`, replace the
+     "multi-module or irreversible plans are drafted by the design
+     subagent" sentence with the unconditional version from the asset
+     (every plan goes through `harness-planner` + critic; default
+     critic command; pointer to ADR 006). Skip if the sentence already
+     references ADR 006.
+   - Check for a `### The Pre-approval critic transcript section`
+     subsection. If absent, insert it immediately before
+     `### The Evaluator transcript section` with the contents from
+     the asset (role definition, invocation contract, verdict shape,
+     block shape, approval rule, feature-less plan handling).
+   - In `## Required sections`, check for a `Pre-approval critic
+     transcript` bullet. If absent, insert it immediately before the
+     `Evaluator transcript` bullet with the contents from the asset.
+   Skip each individually if its content is already present. **Stop
+   with conflict report** if `## How ExecPlans fit into the harness`,
+   `### The Evaluator transcript section`, or `## Required sections`
+   has been renamed.
+
+5. In the target repo's `docs/processes/harness.md` § Phase 5:
+   - Locate the `Drafting a multi-module ExecPlan invokes the
+     harness-planner subagent.` sentence. Replace it with the
+     unconditional version from the asset (every plan; auto-critic;
+     section pointer; ADR 006 link). Skip if the new wording is
+     already present.
+   - Locate the `**Complexity threshold (binding).**` paragraph. If
+     present, delete it entirely. Skip if absent.
+   - Locate the `**Pre-write gate (hard).**` paragraph and drop the
+     "for a complex plan" / "under the complex threshold" / "Simple
+     plans remain orchestrator-written." qualifiers. Match the wording
+     in the asset. Skip if already universal.
+   - Locate the `**Pre-approval critic (hard, complex plans only).**`
+     paragraph. Replace it with the synchronous-hook version from the
+     asset (drops "complex plans only", names the section, documents
+     BLOCKED placeholders, removes the `/codex:status` + `/codex:result`
+     harvest language). Skip if the new wording is already present.
+   - Update the Phase-5 gate sentence to mention the
+     `## Pre-approval critic transcript` section requirement.
+   - In the Phase 5 step table, replace the `Critic pass | Orchestrator
+     | …` row with `Critic pass | Hook (synchronous) | …` per the
+     asset. Skip if already updated.
+   - In § Model assignments, change `Phase 5 complex or multi-module
+     ExecPlans` to `Phase 5 ExecPlans (all plans)`. Skip if already
+     updated.
+
+6. In the target repo's `AGENTS.md` § Phase gates:
+   - Locate the `Phase 2 synthesis, phase 4 broad/irreversible ADRs,
+     and phase 5 multi-module ExecPlans invoke…` bullet. Replace
+     `phase 5 multi-module ExecPlans` with `every phase 5 ExecPlan`
+     and `Phase 5 → harness-planner.` with `Phase 5 → harness-planner
+     (all plans; no complexity threshold — see [ADR 006](docs/decisions/NNN-pre-approval-critic-gate.md)).`
+     Match NNN from step 1.
+   - Locate the `"Multi-module" / complex is defined per project in
+     docs/processes/dev-setup.md § Complexity threshold` bullet. If
+     present, delete it entirely. Skip if absent.
+   - In the "Concrete delegation" subsection, locate the
+     `**Phase 5 — ExecPlan (complex only).**` header. Replace with
+     `**Phase 5 — ExecPlan.**`. Skip if already updated.
+   - Check for a phase-gate bullet describing the
+     `## Pre-approval critic transcript` section as a draft → approved
+     gate. If absent, insert it from the asset (one bullet, paralleling
+     the existing Evaluator-transcript gate, citing ADR NNN from
+     step 1).
+   Skip each individually if its content is already present.
+
+7. In the target repo's `docs/processes/model-policy.md`
+   "Per-step assignments" table:
+   - Find rows for `Phase 5 simple ExecPlan` and `Phase 5 complex
+     ExecPlan`. If both exist, replace them with a single
+     `Phase 5 ExecPlan` row from the asset, and renumber subsequent
+     rows down by 1 (step 17 → 16, 18 → 17, …, 22 → 21). Skip if
+     already a single row.
+   - Find the `Pre-approval critic` row (originally step 16). Replace
+     its Notes column with the synchronous-hook + BLOCKED-placeholder
+     version from the asset. Skip if already updated.
+   - Delete the `## Complex vs simple ExecPlan threshold` section if
+     present. Skip if absent. **Stop with conflict report** if the
+     section has been reworded beyond recognition.
+
+8. In the target repo's `docs/processes/dev-setup.md`, delete the
+   `## Complexity threshold` section if present (heading plus body up
+   to the next `## ` heading). Skip if absent.
+
+9. In the target repo's `.claude/hooks/harness-planner-critic-hook.mjs`,
+   replace the file with the synchronous version from
+   `~/.claude/skills/init-docs/assets/harness-planner-critic-hook.mjs`.
+   This is a **replacing** edit — the hook's behaviour changes from
+   background-detached to synchronous and from silent-skip-on-failure
+   to BLOCKED-placeholder-on-failure. Show the diff and require
+   explicit user `y/n` before overwriting. On `n`, leave the file and
+   emit it as a "Needs manual merge" item in the audit summary; still
+   advance the marker.
+
+10. In the target repo's `SKILL.md`:
+    - Step 1 file list: ensure `docs/decisions/006-pre-approval-critic-gate.md`
+      is present in the seeded-docs enumeration. Insert if absent.
+    - Add a `## Step 13e — Seed ADR 006` step (or `NNN` if step 1
+      chose differently) between Step 13d and Step 14, with the
+      contents from the asset.
+    - Step 16b: replace the "spawns codex-companion.mjs adversarial-review
+      --background detached" language with the synchronous-hook
+      description from the asset (no --background, writes verdict into
+      named section, BLOCKED placeholders on failure). Skip if the new
+      wording is already present.
+    - Step 18 needs-filling list: ensure ADR 006 (`NNN-pre-approval-critic-gate.md`)
+      is listed alongside the other ADRs.
+
+11. In the target repo's `docs/README.md` § Decisions: check for the
+    new ADR catalog entry. If absent, append a one-line entry for the
+    NNN chosen in step 1, e.g.
+    `- [ADR NNN — Pre-approval critic gate](decisions/NNN-pre-approval-critic-gate.md) — #ai-harness #plan`
+    Skip if present.
+
+**Stack-specific notes:** The hook is Node + Bash + jq-free (uses
+spawnSync from `node:child_process`); no stack-specific dependencies
+beyond Node on PATH. The 10-minute timeout is a fleet default; repos
+on very large plans may need to extend it locally — edit the
+`TIMEOUT_MS` constant at the top of the hook script. The hook script
+is tracked in git; activation entry stays per-contributor in
+`.claude/settings.local.json` per CHANGELOG 2026-05-25
+"Block-maintenance" entry (the per-contributor rule is intentionally
+preserved — contributors without codex-plugin-cc get BLOCKED
+placeholders rather than silent skips, and the empty-section gate
+makes manual remediation visible at review time).
+
+**Additive/replacing:** mixed. Additive: ADR 006, PLANS.md section +
+required bullet, exec-plan-template.md section stub, harness.md Phase
+5 table row update, AGENTS.md critic-transcript gate bullet, SKILL.md
+Step 13e. Replacing: dev-setup.md § Complexity threshold deletion,
+model-policy.md row collapse + threshold section deletion, harness.md
+Phase 5 Complexity-threshold paragraph deletion + Pre-write/Pre-approval
+paragraph rewrites + Model assignments row, AGENTS.md "Multi-module
+defined per project" bullet deletion + design-subagent bullet rewrite
++ "complex only" qualifier drop, exec-plan-template.md `module-count:`
+frontmatter deletion, harness-planner-critic-hook.mjs full rewrite,
+SKILL.md Step 16b rewrite.
+
+**Conflict risk:** high. The hook rewrite is the riskiest single
+change in the skill to date — it changes runtime behaviour from
+non-blocking to blocking and from silent-skip to BLOCKED-placeholder.
+Step 9 requires explicit user `y/n` for the overwrite. The
+model-policy row renumbering (step 17–22 → 16–21) and the
+harness.md Phase 5 paragraph deletions/rewrites are also high-touch
+edits — every "Stop with conflict report" branch must halt the audit
+rather than guess. The Phase 4 ADR exemption is documented in ADR 006
+to forestall the natural follow-up question; do not extend the gate
+to ADRs without a superseding ADR.
+
+---
+
 ## 2026-05-25 — Covers: in-execution gate, citation discipline, reorder safety
 
 **What:** Addresses the three negative consequences ADR 005 names —

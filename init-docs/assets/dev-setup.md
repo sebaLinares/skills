@@ -120,29 +120,6 @@ escape hatch for Features the tagged-test convention does not cover
 (e.g. health endpoints, smoke checks). It is fully decoupled from the
 plan-coverage sensor.
 
-## Complexity threshold
-
-*Fill in:* the rule that classifies an ExecPlan as **complex** vs
-**simple**. Phrase it in terms of modules / packages / core
-infrastructure directories the plan touches, so the classification is
-auditable from `module-count:` in the plan frontmatter without
-re-reading the body.
-
-Typical shapes (pick one or write your own):
-
-    ≥2 directories under <modules-root>/, OR
-    ≥2 of <core-infra-dir-1>, <core-infra-dir-2>, <core-infra-dir-3>.
-
-High-risk or irreversible single-module plans (data migrations,
-auth-path rewrites, public-API contract changes) are also complex
-regardless of module count. Borderline cases default to complex.
-
-Complex plans are drafted by the `harness-planner` subagent on Opus
-4.7 xhigh and require a `codex:adversarial-review` pre-approval pass.
-Simple plans stay on the orchestrator with no critic pass. See
-`docs/processes/harness.md` § Phase 5 and
-`docs/processes/model-policy.md` § Complex vs simple ExecPlan threshold.
-
 ## Evaluator convention
 
 Fleet default per `docs/processes/model-policy.md`. Override only if
@@ -150,9 +127,33 @@ Fleet default per `docs/processes/model-policy.md`. Override only if
 
     <evaluator-cmd> <plan-path>
 
-    evaluator-cmd: codex:adversarial-review --base <merge-base>
-    # Focus text template: "Verify Alignment + Acceptance against
-    # docs/exec-plans/active/<plan>.md. Report verdicts per ADR 003 block shape."
+    evaluator-cmd: node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" adversarial-review --base <merge-base>
+    # Focus text template:
+    #   "Adversarial verification of completion. Challenge the worker's
+    #   claim that the diff at docs/exec-plans/active/<plan>.md is done.
+    #   Pressure-test Alignment (does the diff actually implement the
+    #   Plan-of-Work and Concrete Steps, or has scope drifted / been
+    #   silently omitted?) and Acceptance (are the Validation & Acceptance
+    #   criteria actually verified with evidence — test transcripts,
+    #   observable outputs — not just declared green?). Quality is
+    #   optional; failing Quality routes to tech-debt-tracker.md, not
+    #   completion blocker. Report verdicts per ADR 003 block shape."
+
+### Tool resolution
+
+The codex-plugin-cc slash command `/codex:adversarial-review` sets
+`disable-model-invocation: true`, so the orchestrator cannot invoke it
+from inside a turn. The Evaluator therefore runs through the underlying
+`codex-companion.mjs` script via Bash. The script ships with the plugin
+under `${CLAUDE_PLUGIN_ROOT}/scripts/`; `CLAUDE_PLUGIN_ROOT` is populated
+in any orchestrator Bash call when codex-plugin-cc is installed. The
+choice of `adversarial-review` over `review` is forced by tooling:
+`adversarial-review` is the only review command that accepts focus text,
+which the Evaluator needs to carry its verdict-block instructions. The
+focus text above is framed as adversarial verification of conformance so
+the tool's "challenge the chosen approach" framing matches the
+Evaluator's "challenge the worker's claim of completion" purpose — see
+ADR 003 § Tool selection.
 
 *Independence assertion (single line):* confirm that this command
 runs in a context that does **not** share state with the worker's

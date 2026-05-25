@@ -70,16 +70,29 @@ hard-label clothing, which is worse than no rule at all (see
   [`docs/PLANS.md`](docs/PLANS.md) → "The `Evaluator transcript`
   section". This is the worker/checker split applied to plan
   completion.
-- Phase 2 synthesis, phase 4 broad/irreversible ADRs, and phase 5
-  multi-module ExecPlans invoke a typed design subagent (Opus 4.7
-  xhigh) per [model policy](docs/processes/model-policy.md).
-  Phase 2 → `harness-analyst`. Phase 5 → `harness-planner`. Phase 4
-  broad ADRs stay on the generic Opus Task call for now. Pre-approval
-  critic and Evaluator passes invoke `codex:adversarial-review` per
-  the same policy.
-- "Multi-module" / complex is defined per project in
-  [`docs/processes/dev-setup.md`](docs/processes/dev-setup.md) §
-  Complexity threshold. Borderline cases default to complex.
+- Phase 2 synthesis, phase 4 broad/irreversible ADRs, and every
+  phase 5 ExecPlan invoke a typed design subagent (Opus 4.7 xhigh)
+  per [model policy](docs/processes/model-policy.md).
+  Phase 2 → `harness-analyst`. Phase 5 → `harness-planner` (all
+  plans; no complexity threshold — see
+  [ADR 006](docs/decisions/006-pre-approval-critic-gate.md)). Phase 4
+  broad ADRs stay on the generic Opus Task call for now. The
+  pre-approval critic is auto-fired by the
+  `harness-planner-critic-hook.mjs` SubagentStop hook; the Completion
+  Evaluator is orchestrator-invoked at the start of Phase 6 close-out.
+  Both dispatch through `codex-companion.mjs adversarial-review` via
+  Bash because the `/codex:adversarial-review` slash command is
+  user-only. See `docs/processes/model-policy.md` § Codex commands
+  reference.
+- No plan moves from `status: draft` to `status: approved` without a
+  `## Pre-approval critic transcript` section containing a non-BLOCKED
+  verdict. The critic is auto-fired by
+  `.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner`
+  SubagentStop and writes its verdict into the section synchronously.
+  This is the worker/checker split applied to plan approval — see
+  [ADR 006](docs/decisions/006-pre-approval-critic-gate.md) and
+  [`docs/PLANS.md`](docs/PLANS.md) → "The `Pre-approval critic
+  transcript` section".
 - The subagents own the Write to `docs/analysis/...` and
   `docs/exec-plans/active/...`. The orchestrator never writes to those
   paths. Any `Write`/`Edit` whose `file_path` matches
@@ -109,8 +122,8 @@ hard-label clothing, which is worse than no rule at all (see
   )
   ```
 
-  **Phase 5 — ExecPlan (complex only).** After the analysis is
-  approved and you have scoped the `covers:` globs:
+  **Phase 5 — ExecPlan.** After the analysis is approved and you
+  have scoped the `covers:` globs:
 
   ```
   Task(

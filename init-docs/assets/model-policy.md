@@ -29,46 +29,45 @@ across scaffolded repos. ADR 004 records the rationale.
 | 11 | Phase 3 findings review | Orchestrator | Main session | Apply lead feedback and resolve or defer open questions. |
 | 12 | Phase 4 scoped decisions | Orchestrator | Main session | Record plan-local decisions inline. |
 | 13 | Phase 4 broad or irreversible ADRs | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft ADRs with cross-plan or hard-to-reverse scope. |
-| 14 | Phase 5 simple ExecPlan | Orchestrator | Main session | Draft single-module or straightforward plans. |
-| 15 | Phase 5 complex ExecPlan | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft multi-module, high-risk, or irreversible plans. Threshold below. |
-| 16 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review draft plans before human approval. Mandatory on complex plans; skipped on simple. **Auto-invoked** by `.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner` SubagentStop. Manual `/codex:adversarial-review` remains available for ad-hoc use. |
-| 17 | Phase 6 execution | Orchestrator | Main session | Execute approved plan steps and update progress. |
-| 18 | Mid-execution diff sanity | Checker / rescue | `codex:review` | Request when the diff grows broad, risky, or surprising. |
-| 19 | Rescue implementation | Checker / rescue | `codex:rescue` | Use when the orchestrator is stuck or needs an independent implementation attempt. |
-| 20 | Async result harvest | Checker / rescue | `codex:result` | Collect codex plugin results after async checker or rescue work. |
-| 21 | Completion Evaluator | Checker / rescue | `codex:adversarial-review --base <merge-base>` | Default Evaluator command before moving a plan to `completed/`. |
-| 22 | Session exit and steering loop | Orchestrator | Main session | Run close-out, then route model drift through the steering loop. |
-
-## Complex vs simple ExecPlan threshold
-
-Binding for steps 15 and 16.
-
-The project-specific definition of *complex* lives in
-`docs/processes/dev-setup.md` § Complexity threshold. The contract
-the threshold must satisfy:
-
-- Phrased in terms of modules / packages / core infrastructure files
-  the plan touches — auditable from the plan's `covers:` frontmatter
-  without re-reading the body.
-- High-risk or irreversible single-module plans (data migrations,
-  auth-path rewrites, public-API contract changes) are also complex
-  regardless of module count.
-- Borderline cases default to complex — the design-subagent cost is
-  bounded; a wrong-tier synthesis is not.
-
-Plans declare the count in frontmatter as `module-count: <N>` so the
-classification is auditable from `docs/exec-plans/` without re-reading
-the body.
-
-Anything below the bar is **simple**: drafted by the orchestrator on
-Sonnet, no critic pass required.
+| 14 | Phase 5 ExecPlan | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft every ExecPlan. No complexity threshold — see ADR 006. |
+| 15 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review every draft plan before lead approval. **Auto-invoked synchronously** by `.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner` SubagentStop; the hook writes the verdict into the plan's `## Pre-approval critic transcript` section. Failure modes (plugin missing, codex crash) write a `BLOCKED: <reason>` placeholder in the same section. See ADR 006. |
+| 16 | Phase 6 execution | Orchestrator | Main session | Execute approved plan steps and update progress. |
+| 17 | Mid-execution diff sanity | Checker / rescue | `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" review` | Request when the diff grows broad, risky, or surprising. The `/codex:review` slash command sets `disable-model-invocation: true`, so the orchestrator invokes the underlying companion script via Bash. |
+| 18 | Rescue implementation | Checker / rescue | `Agent(subagent_type="codex:codex-rescue", prompt=…)` | Use when the orchestrator is stuck or needs an independent implementation attempt. The `/codex:rescue` slash command is user-only; the orchestrator routes through the `codex:codex-rescue` subagent directly via the `Agent` tool. |
+| 19 | Async result harvest | Checker / rescue | `BashOutput` on the spawned shell (preferred) or `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" result [job-id]` | Default to synchronous Bash invocation in step 17/20 — the verdict lands in stdout and needs no harvest. Only required when a checker was launched with `run_in_background: true`. The `/codex:result` slash command is user-only. |
+| 20 | Completion Evaluator | Checker / rescue | `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" adversarial-review --base <merge-base>` | Default Evaluator command before moving a plan to `completed/`. Uses `adversarial-review` for its steerability (the only review command that accepts focus text); the focus text is framed as adversarial verification of conformance — see ADR 003 § Tool selection. |
+| 21 | Session exit and steering loop | Orchestrator | Main session | Run close-out, then route model drift through the steering loop. |
 
 ## Codex commands reference
 
-- `codex:rescue` — independent implementation attempt when the orchestrator is blocked.
-- `codex:adversarial-review` — checker pass for draft plans, completion evaluation, and high-stakes review.
-- `codex:review` — focused diff sanity review during execution.
-- `codex:result` — harvest the result of an async codex plugin task.
+The codex-plugin-cc slash commands (`/codex:review`, `/codex:adversarial-review`,
+`/codex:result`, `/codex:cancel`, `/codex:status`) set
+`disable-model-invocation: true` — they are user-only and the orchestrator
+**cannot** invoke them from inside a turn. `/codex:rescue` is also user-only
+in practice; it forwards to the `codex:codex-rescue` subagent which the
+orchestrator *can* invoke via the `Agent` tool. The orchestrator therefore
+calls the underlying tooling through two paths:
+
+- Bash → `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" <subcommand>`
+  for review, adversarial-review, result, status, cancel. The
+  `harness-planner-critic-hook.mjs` ships a discovery shim
+  (`find ~/.claude/plugins/ -name codex-companion.mjs`) for hook contexts
+  where `CLAUDE_PLUGIN_ROOT` is not populated; orchestrator Bash calls have
+  the variable available.
+- Agent tool with `subagent_type="codex:codex-rescue"` for rescue work.
+
+Roles:
+
+- `codex:codex-rescue` (Agent subagent) — independent implementation attempt
+  when the orchestrator is blocked.
+- `codex-companion.mjs adversarial-review` — steerable challenge review.
+  Used for draft-plan critique (Step 15, hook-fired) and completion
+  evaluation (Step 20, orchestrator-fired with `--base <merge-base>` plus
+  focus text).
+- `codex-companion.mjs review` — non-steerable defect-finding review of the
+  current diff. Used for on-demand mid-execution diff sanity (Step 17).
+- `codex-companion.mjs result` — fallback for harvesting a background job's
+  stored output when `BashOutput` on the original shell is unavailable.
 
 ## Fallback when codex plugin is absent
 
@@ -78,10 +77,10 @@ Use this chain when a checker command is unavailable:
 2. Fall back to a fresh Claude subagent via the Task tool, with no shared working context beyond a self-contained brief.
 3. Fall back to a human reviewer in a separate session.
 
-`codex:rescue` has no good fallback. Its purpose is breaking deadlock by using
-a structurally independent implementation worker; when unavailable, pause and
-ask for human direction rather than pretending ordinary orchestration is
-equivalent.
+`codex:codex-rescue` has no good fallback. Its purpose is breaking deadlock
+by using a structurally independent implementation worker; when unavailable,
+pause and ask for human direction rather than pretending ordinary
+orchestration is equivalent.
 
 ## How to update fleet-wide
 

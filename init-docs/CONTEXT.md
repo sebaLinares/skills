@@ -21,6 +21,31 @@ _Avoid_: "reviewer" (overloaded with human PR review), "judge" (overloaded with 
 **Evaluator invocation contract**:
 Universal shape `<evaluator-cmd> <plan-path>`. The Evaluator reads the plan plus the working tree it references, then writes its verdicts into a dedicated **Evaluator transcript** section *inside the plan file itself*. The worker that produced the plan never edits that section — independence is structural (different writer, different context), not convention-only. The worker then reads the section it didn't write, parses verdicts, and decides whether to move the plan to `completed/`. Pattern is analogous to the existing `verify-cmd:` / `verify:` contract for Features.
 
+**Pre-approval critic**:
+The checker for ExecPlan *approval* — the worker/checker split applied at
+the draft→approved phase boundary, paralleling [[evaluator]] at active→completed.
+Same independence requirement as the Evaluator (different model family,
+different context). Default tool is `codex:adversarial-review` (the slash
+command name); the hook invokes the underlying `codex-companion.mjs
+adversarial-review` script via Bash because the slash command itself sets
+`disable-model-invocation: true`. Fallback chain per `model-policy.md`
+§ Fallback (fresh Claude subagent, then human reviewer). Auto-fired by
+`.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner`
+SubagentStop. Mandatory on every ExecPlan — there is no complexity
+threshold; the worker/checker split is unconditional at this gate
+(ADR 006).
+_Avoid_: "reviewer" (overloaded with human PR review).
+
+**Pre-approval critic transcript**:
+The artifact the [[pre-approval-critic]] writes into the plan file at a
+dedicated `## Pre-approval critic transcript` section, paralleling
+[[evaluator-transcript]] at completion. The worker (orchestrator) never
+edits this section — independence is structural, not convention-only.
+Phase 5 gate: the lead does not approve a plan whose section is empty
+or BLOCKED. Hook failure modes (codex plugin missing, codex crash) write
+a `BLOCKED: <reason>` placeholder into the section so the empty-section
+gate fires loudly instead of silently.
+
 **Evaluator scope**:
 What the Evaluator certifies. Two required verdicts and one optional:
 1. **Alignment** (required) — the diff implements what the plan's Plan-of-Work and Concrete Steps said it would. Catches scope drift and silent omissions.
@@ -43,17 +68,22 @@ and verification to checker commands.
 **Design subagent**:
 Opus 4.7 xhigh invoked from the orchestrator for the harness's design surfaces:
 analysis-doc synthesis (phase 2), broad/irreversible ADRs (phase 4),
-complex/multi-module ExecPlans (phase 5). Receives a self-contained brief from
-the orchestrator; writes the artifact in place; returns a one-paragraph
-summary. Reasoning is opaque to the orchestrator by design.
+ExecPlans (phase 5 — all plans, no complexity threshold). Receives a
+self-contained brief from the orchestrator; writes the artifact in place;
+returns a one-paragraph summary. Reasoning is opaque to the orchestrator by
+design.
 
 **Checker / rescue tier**:
 GPT-5.5 high invoked via the codex plugin. Two roles share the tier because
 both require structural independence from the orchestrator: *checker*
 (Evaluator, pre-approval critic, diff sanity) reads and verdicts without
-writing code; *rescue* (`codex:rescue`) implements when the orchestrator is
-stuck. Independence is achieved by being a different model family, not just a
-different context window.
+writing code; *rescue* (`codex:codex-rescue` subagent) implements when the
+orchestrator is stuck. Independence is achieved by being a different model
+family, not just a different context window. The codex-plugin-cc slash
+commands set `disable-model-invocation: true`, so the orchestrator reaches
+the checker side through `codex-companion.mjs` via Bash and the rescue side
+through the `Agent` tool with `subagent_type="codex:codex-rescue"`. See
+`model-policy.md` § Codex commands reference.
 
 **Model policy**:
 Fleet-wide per-step model assignments at `docs/processes/model-policy.md`.

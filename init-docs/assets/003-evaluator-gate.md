@@ -71,6 +71,44 @@ arguably the most prone to "I think it's equivalent" overconfidence;
 the Evaluator confirms the verifier was actually run and reported no
 regression, not just declared green.
 
+## Tool selection
+
+The fleet default `evaluator-cmd` resolves to
+`codex-companion.mjs adversarial-review --base <merge-base>` (see
+`docs/processes/dev-setup.md` § Evaluator convention). Two notes about
+that choice.
+
+First, the orchestrator cannot invoke `/codex:adversarial-review` as a
+slash command — codex-plugin-cc sets `disable-model-invocation: true` on
+its review commands. The Evaluator therefore runs through the underlying
+companion script via Bash. This is the same dispatch path the
+pre-approval critic hook (ADR 006) uses, kept consistent so both
+worker/checker gates share one tooling story.
+
+Second, the choice of `adversarial-review` over `review` is forced by
+the codex plugin's surface area, not by the spirit of the Evaluator
+role. The README for codex-plugin-cc positions `/codex:review` as a
+non-steerable defect-finding pass and `/codex:adversarial-review` as a
+steerable challenge-the-direction pass. The Evaluator's job — verifying
+Alignment + Acceptance against a specific plan — is conformance work,
+which sounds closer to `review`. But `/codex:review` accepts no focus
+text and no plan path, so it cannot carry the Evaluator's instruction
+template (verdict block shape, Alignment vs Acceptance separation,
+plan-relative comparison). Only `adversarial-review` accepts focus text.
+
+The harness resolves the tension by framing the Evaluator's focus text
+as adversarial verification of conformance: "challenge the worker's
+claim that the diff is done; pressure-test the Acceptance evidence."
+This matches the README's adversarial framing ("pressure-test
+assumptions, tradeoffs, failure modes... reliability") applied to the
+question "did this work actually complete." The prompt template lives
+in `dev-setup.md` § Evaluator convention so any future change to the
+focus text is visible in one place.
+
+Codex-plugin-cc is treated as fixed external tooling — no upstream
+feature request is implied. If the plugin later adds focus-text support
+to `/codex:review`, this ADR should be revisited.
+
 ## Consequences
 
 `docs/processes/harness.md` Phase 6 grows one step — Evaluator

@@ -87,7 +87,9 @@ and directory the skill would write:
   `docs/decisions/002-session-exit.md`,
   `docs/decisions/003-evaluator-gate.md`,
   `docs/decisions/004-fleet-model-policy.md`,
-  `docs/decisions/005-hard-constraints.md`, `docs/references/README.md`,
+  `docs/decisions/005-hard-constraints.md`,
+  `docs/decisions/006-pre-approval-critic-gate.md`,
+  `docs/references/README.md`,
   `docs/generated/README.md`.
 - Subagent configs: `.claude/agents/harness-analyst.md`,
   `.claude/agents/harness-planner.md`.
@@ -296,6 +298,11 @@ Copy `assets/004-fleet-model-policy.md` to
 Copy `assets/005-hard-constraints.md` to
 `docs/decisions/005-hard-constraints.md`. No placeholders.
 
+## Step 13e — Seed ADR 006
+
+Copy `assets/006-pre-approval-critic-gate.md` to
+`docs/decisions/006-pre-approval-critic-gate.md`. No placeholders.
+
 ## Step 14 — Write `docs/README.md`
 
 Copy `assets/docs-README.md` to `docs/README.md`. Two substitutions:
@@ -355,16 +362,22 @@ Copy `assets/harness-analyst.md` and `assets/harness-planner.md` to
 Both files are stack-neutral; no substitution.
 
 These configure the typed design subagents the orchestrator delegates
-to in Phase 2 (analysis synthesis) and Phase 5 (complex ExecPlans) per
+to in Phase 2 (analysis synthesis) and Phase 5 (all ExecPlans) per
 `docs/processes/harness.md` and `AGENTS.md` § Phase gates.
 
 ## Step 16b — Wire the harness-planner critic hook
 
-The `codex:adversarial-review` slash command sets
-`disable-model-invocation: true` in the codex-plugin-cc package, which
-means the orchestrator **cannot** invoke it from inside a turn. To
-keep the model-policy step 16 enforceable, ship a SubagentStop hook
-that auto-fires codex when `harness-planner` returns.
+Every ExecPlan must pass through the pre-approval critic before the
+lead approves it (ADR 006). The `codex:adversarial-review` slash
+command sets `disable-model-invocation: true` in the codex-plugin-cc
+package, so the orchestrator **cannot** invoke it from inside a turn.
+The hook is the only mechanical path to the critic. The same
+restriction applies to `/codex:review` and `/codex:result`; the
+Completion Evaluator (Step 20 in model-policy) and on-demand diff
+sanity (Step 17) reach the underlying companion script through the
+orchestrator's own Bash calls — see
+`docs/processes/dev-setup.md` § Evaluator convention for the
+Evaluator's resolved command shape.
 
 1. Copy `assets/harness-planner-critic-hook.mjs` →
    `.claude/hooks/harness-planner-critic-hook.mjs` in the project
@@ -388,13 +401,22 @@ that auto-fires codex when `harness-planner` returns.
 Flag in the Step 18 report: "Critic hook script tracked in
 `.claude/hooks/`; activation entry in gitignored
 `.claude/settings.local.json`. Requires `codex-plugin-cc` installed
-locally for the hook to do anything — contributors without it get a
-silent no-op (one stderr line, exit 0)."
+locally; without it the hook writes a `BLOCKED: codex-plugin-cc not
+installed` placeholder into the plan's `## Pre-approval critic
+transcript` section instead of a verdict. The empty-section gate
+(PLANS.md) means the lead won't approve until the section contains a
+non-BLOCKED verdict."
 
-The hook fires only on `subagent_type === "harness-planner"` and
-spawns `codex-companion.mjs adversarial-review --background` detached.
-The agent turn is never blocked. Verdict harvest: `/codex:status` then
-`/codex:result <job-id>`.
+The hook fires only on `subagent_type === "harness-planner"`. It runs
+`codex-companion.mjs adversarial-review` **synchronously** (no
+`--background`), captures stdout, and writes the verdict directly into
+the plan's `## Pre-approval critic transcript` section using
+ADR-006's run-block format. The agent's turn pauses for the duration
+of the critic run (typically 30–90s, hard-capped at 10 minutes). On
+any failure mode (plugin missing, codex crash, timeout, non-zero exit,
+empty stdout), the hook writes a `BLOCKED: <reason>` placeholder into
+the same section so the lead's approval gate fires loudly rather than
+silently.
 
 ## Step 16c — Ship the covers: hook reference
 
@@ -513,8 +535,9 @@ List every file and directory created or skipped. Use four sections:
   `docs/decisions/002-session-exit.md`, ADR 003 at
   `docs/decisions/003-evaluator-gate.md`, ADR 004 at
   `docs/decisions/004-fleet-model-policy.md`, ADR 005 at
-  `docs/decisions/005-hard-constraints.md`, and the fleet model
-  policy at `docs/processes/model-policy.md`.
+  `docs/decisions/005-hard-constraints.md`, ADR 006 at
+  `docs/decisions/006-pre-approval-critic-gate.md`, and the fleet
+  model policy at `docs/processes/model-policy.md`.
 - **Skipped (already existed)** — existing files not touched.
 - **Needs filling** — files written with placeholder content the user
   must resolve. At minimum: `ARCHITECTURE.md`, `SECURITY.md`,

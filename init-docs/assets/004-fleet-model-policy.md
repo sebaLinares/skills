@@ -30,10 +30,13 @@ The harness adopts a three-tier fleet:
 - Checker / rescue: GPT-5.5 high via the codex plugin.
 
 The single source of truth for per-step assignment is
-`docs/processes/model-policy.md`. The default Evaluator command is
-`codex:adversarial-review --base <merge-base>`. The codex plugin is a soft
-dependency: if unavailable, the fallback chain is the named codex command, then
-a fresh Claude subagent, then a human reviewer.
+`docs/processes/model-policy.md`. The default Evaluator command resolves to
+`codex-companion.mjs adversarial-review --base <merge-base>`, invoked by the
+orchestrator via Bash — the `/codex:adversarial-review` slash command sets
+`disable-model-invocation: true` and cannot be reached from inside an agent
+turn. The codex plugin is a soft dependency: if unavailable, the fallback
+chain is the named codex command, then a fresh Claude subagent, then a human
+reviewer.
 
 Out of scope: mechanical enforcement, per-plan model frontmatter, cost
 accounting, latency budgets, and model-routing automation.
