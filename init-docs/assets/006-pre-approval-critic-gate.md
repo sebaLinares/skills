@@ -1,11 +1,13 @@
 ---
+id: pre-approval-critic-gate
 owner: {{REPO_NAME}}
 status: accepted
-last_reviewed: 2026-05-26
+last_reviewed: 2026-05-28
 update_trigger: on-supersession
+legacy_numbers: []
 ---
 
-# ADR 006 — Pre-approval critic gate
+# ADR pre-approval-critic-gate — Pre-approval critic gate
 
 ## Status
 
@@ -17,7 +19,7 @@ complex tier).
 ## Context
 
 The harness applied the worker/checker split asymmetrically across the
-ExecPlan lifecycle. At *completion* (active → completed), ADR 003 made the
+ExecPlan lifecycle. At *completion* (active → completed), ADR evaluator-gate made the
 Evaluator pass unconditional — every plan, regardless of size or risk, gets an
 independent verdict before the file moves. At *approval* (draft → approved),
 the pre-approval critic was conditional on a project-defined "complex"
@@ -36,7 +38,7 @@ would benefit from skipping the critic. The "ambiguity could wrongly leave one
 review out" failure mode is structural, not a documentation gap.
 
 Second, the simple-tier path violates the worker/checker split named in
-`docs/processes/CONTEXT.md` and reinforced by ADR 003. When the orchestrator
+`docs/processes/CONTEXT.md` and reinforced by ADR evaluator-gate. When the orchestrator
 drafts a plan and the orchestrator advances it to lead-approval with no
 independent check in between, the orchestrator is certifying its own work.
 The lead's review at approval-time is the checker — but the lead is reviewing

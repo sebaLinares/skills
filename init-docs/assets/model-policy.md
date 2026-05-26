@@ -9,7 +9,7 @@ update_trigger: on-fleet-policy-change
 
 This policy is fleet-wide and not project-configurable. It names the model
 assignments for the harness so that failures and improvements can be compared
-across scaffolded repos. ADR 004 records the rationale.
+across scaffolded repos. ADR fleet-model-policy records the rationale.
 
 ## Tiers
 
@@ -36,13 +36,13 @@ across scaffolded repos. ADR 004 records the rationale.
 | 11 | Phase 3 findings review | Orchestrator | Main session | Apply lead feedback and resolve or defer open questions. |
 | 12 | Phase 4 scoped decisions | Orchestrator | Main session | Record plan-local decisions inline. |
 | 13 | Phase 4 broad or irreversible ADRs | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft ADRs with cross-plan or hard-to-reverse scope. |
-| 14 | Phase 5 ExecPlan | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft every ExecPlan. No complexity threshold — see ADR 006. |
-| 15 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review every draft plan before lead approval. **Auto-invoked synchronously** by `.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner` SubagentStop; the hook writes the verdict into the plan's `## Pre-approval critic transcript` section. Failure modes (plugin missing, codex crash) write a `BLOCKED: <reason>` placeholder in the same section. See ADR 006. |
+| 14 | Phase 5 ExecPlan | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft every ExecPlan. No complexity threshold — see ADR pre-approval-critic-gate. |
+| 15 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review every draft plan before lead approval. **Auto-invoked synchronously** by `.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner` SubagentStop; the hook writes the verdict into the plan's `## Pre-approval critic transcript` section. Failure modes (plugin missing, codex crash) write a `BLOCKED: <reason>` placeholder in the same section. See ADR pre-approval-critic-gate. |
 | 16 | Phase 6 execution | Orchestrator | Main session | Execute approved plan steps and update progress. |
 | 17 | Mid-execution diff sanity | Checker / rescue | `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" review` | Request when the diff grows broad, risky, or surprising. The `/codex:review` slash command sets `disable-model-invocation: true`, so the orchestrator invokes the underlying companion script via Bash. |
 | 18 | Rescue implementation | Checker / rescue | `Agent(subagent_type="codex:codex-rescue", prompt=…)` | Use when the orchestrator is stuck or needs an independent implementation attempt. The `/codex:rescue` slash command is user-only; the orchestrator routes through the `codex:codex-rescue` subagent directly via the `Agent` tool. |
 | 19 | Async result harvest | Checker / rescue | `BashOutput` on the spawned shell (preferred) or `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" result [job-id]` | Default to synchronous Bash invocation in step 17/20 — the verdict lands in stdout and needs no harvest. Only required when a checker was launched with `run_in_background: true`. The `/codex:result` slash command is user-only. |
-| 20 | Completion Evaluator | Checker / rescue | `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" adversarial-review --base <merge-base>` | Default Evaluator command before moving a plan to `completed/`. Uses `adversarial-review` for its steerability (the only review command that accepts focus text); the focus text is framed as adversarial verification of conformance — see ADR 003 § Tool selection. |
+| 20 | Completion Evaluator | Checker / rescue | `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" adversarial-review --base <merge-base>` | Default Evaluator command before moving a plan to `completed/`. Uses `adversarial-review` for its steerability (the only review command that accepts focus text); the focus text is framed as adversarial verification of conformance — see ADR evaluator-gate § Tool selection. |
 | 21 | Session exit and steering loop | Orchestrator | Main session | Run close-out, then route model drift through the steering loop. |
 
 ## Codex commands reference

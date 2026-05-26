@@ -59,13 +59,17 @@ Point-in-time research, gap reports, investigations. Dated — may be superseded
 ## Decisions
 Architecture Decision Records (ADRs). Explain *why* the system is the way it is.
 
-- [001 — Harness Engineering for AI Agent Usage](decisions/001-harness-design.md) — guides + sensors, phase gates, plans as first-class artifacts `#ai-harness` `#adr`
-- [002 — Session exit closes the bootstrap asymmetry](decisions/002-session-exit.md) — explicit session close-out checklist and chat-sweep routing `#ai-harness` `#adr`
-- [003 — Evaluator gate at plan completion](decisions/003-evaluator-gate.md) — independent evaluator pass before `active/` → `completed/`; worker/checker split for plan closure `#ai-harness` `#adr`
-- [004 — Fleet model policy](decisions/004-fleet-model-policy.md) — named models per harness step; Sonnet orchestrator, Opus design subagent, GPT-5.5 checker via codex plugin `#ai-harness` `#adr`
-- [005 — Hard constraints as a separate category from phase gates](decisions/005-hard-constraints.md) — `## Hard constraints (MUST / MUST NOT)` section in `AGENTS.md`, distinct from phase gates `#ai-harness` `#adr`
-- [006 — Pre-approval critic gate](decisions/006-pre-approval-critic-gate.md) — unconditional pre-approval critic pass; simple/complex threshold removed; pre-approval critic transcript artifact `#ai-harness` `#adr`
-- [007 — Harness validators](decisions/007-harness-validators.md) — stdlib Python structure check + doc garbage collector at `scripts/harness/`; stack-agnostic wiring `#ai-harness` `#adr`
+ADRs are identified by their `id:` slug, not by filename number. The
+number prefix is a per-repo sort key only — references inside docs use
+the slug. See `processes/harness.md` § ADR identity for the convention.
+
+- [ADR harness-design — Harness Engineering for AI Agent Usage](decisions/001-harness-design.md) — guides + sensors, phase gates, plans as first-class artifacts `#ai-harness` `#adr`
+- [ADR session-exit — Session exit closes the bootstrap asymmetry](decisions/002-session-exit.md) — explicit session close-out checklist and chat-sweep routing `#ai-harness` `#adr`
+- [ADR evaluator-gate — Evaluator gate at plan completion](decisions/003-evaluator-gate.md) — independent evaluator pass before `active/` → `completed/`; worker/checker split for plan closure `#ai-harness` `#adr`
+- [ADR fleet-model-policy — Fleet model policy](decisions/004-fleet-model-policy.md) — named models per harness step; Sonnet orchestrator, Opus design subagent, GPT-5.5 checker via codex plugin `#ai-harness` `#adr`
+- [ADR hard-constraints — Hard constraints as a separate category from phase gates](decisions/005-hard-constraints.md) — `## Hard constraints (MUST / MUST NOT)` section in `AGENTS.md`, distinct from phase gates `#ai-harness` `#adr`
+- [ADR pre-approval-critic-gate — Pre-approval critic gate](decisions/006-pre-approval-critic-gate.md) — unconditional pre-approval critic pass; simple/complex threshold removed; pre-approval critic transcript artifact `#ai-harness` `#adr`
+- [ADR harness-validators — Harness validators](decisions/007-harness-validators.md) — stdlib Python structure check + doc garbage collector at `scripts/harness/`; stack-agnostic wiring `#ai-harness` `#adr`
 
 ## Exec plans
 Active and completed initiative plans. First-class artifacts — reviewed before any code is written. Plan-scoped decisions live inline; architectural decisions escalate to ADRs.
@@ -80,7 +84,7 @@ Active and completed initiative plans. First-class artifacts — reviewed before
 ## Processes
 How-we-work: guidelines, conventions, runbooks.
 
-- [Harness — Operating Manual](processes/harness.md) — day-to-day workflow phases, phase gates, steering loop; implements ADR 001 `#ai-harness` `#guideline`
+- [Harness — Operating Manual](processes/harness.md) — day-to-day workflow phases, phase gates, steering loop; implements ADR harness-design `#ai-harness` `#guideline`
 - [Developer setup](processes/dev-setup.md) — local toolchain, pre-commit hook, common commands — **fill in for this stack** `#ai-harness` `#guideline`
 - [Model policy](processes/model-policy.md) — fleet-wide per-step model assignments and codex command reference `#ai-harness` `#guideline`
 - [Initialization checklist](processes/initialization-checklist.md) — the bootstrap contract; four conditions every operable repo must satisfy `#ai-harness` `#guideline`

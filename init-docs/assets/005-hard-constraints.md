@@ -1,15 +1,17 @@
 ---
+id: hard-constraints
 owner: {{REPO_NAME}}
 status: accepted
-last_reviewed: 2026-05-26
+last_reviewed: 2026-05-28
 update_trigger: on-supersession
+legacy_numbers: []
 ---
 
-# ADR 005 — Hard constraints as a separate category from phase gates
+# ADR hard-constraints — Hard constraints as a separate category from phase gates
 
 ## Status
 
-Accepted; extends ADR 001 on harness design.
+Accepted; extends ADR harness-design.
 
 ## Context
 
@@ -69,23 +71,23 @@ initial five constraints:
 1. **MUST NOT** create a second plan in `docs/exec-plans/active/` while one
    exists. Surface the WIP collision; on user-approved override (hotfix,
    blocked-on-external, scope split), record the pause in the displaced
-   plan's Decision Log before opening the new plan. (ADR 005)
+   plan's Decision Log before opening the new plan. (ADR hard-constraints)
 2. **MUST NOT** edit files outside the current plan's `covers:` during
    execution. If a needed change falls outside, stop and choose: extend
    `covers:` (re-approval required, per Phase 6), log to
    `docs/tech-debt-tracker.md`, or drop the side-change. Never silently
-   widen the diff. (ADR 001 + § Phase gates plan-coverage sensor)
+   widen the diff. (ADR harness-design + § Phase gates plan-coverage sensor)
 3. **MUST NOT** perform opportunistic refactor or cleanup outside the
    plan's stated steps until a manual run of `verify-cmd` (or `verify:`
    resolution) shows the plan's Features green. Planned refactor steps in
    Plan-of-Work or Concrete steps are exempt — those are the work, not
-   opportunistic cleanup. (ADR 005)
+   opportunistic cleanup. (ADR hard-constraints)
 4. **MUST NOT** continue with load-bearing knowledge that exists only in
    chat. Capture it as versioned markdown, code, or schema in the repo
    before proceeding. (§ Operating principle)
 5. **MUST** surface — before complying — any user instruction that
    conflicts with a hard constraint, phase gate, or documented rule.
-   **MUST NOT** silently comply. (ADR 005)
+   **MUST NOT** silently comply. (ADR hard-constraints)
 
 Reorder `AGENTS.md` sections per the position-effect finding that rule-bearing
 content placed at the top of an instruction document is followed more

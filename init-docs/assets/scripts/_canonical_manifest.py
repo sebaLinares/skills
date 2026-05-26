@@ -10,6 +10,13 @@ canonical file MUST update this module in the same entry. The skill's
 "How to update this skill" ritual treats manifest drift as an audit failure.
 
 All paths are repo-root-relative POSIX strings.
+
+ADR identity. ADRs are identified by their `id:` frontmatter slug, not by
+filename number. The filename number is a per-repo sort key; the same ADR
+may live at different numbers in different scaffolded repos. The slug list
+below (ADR_SLUGS_REQUIRED) is the canonical identity set; validators
+resolve each slug to its current file by scanning `docs/decisions/` for
+matching frontmatter.
 """
 
 from __future__ import annotations
@@ -18,6 +25,11 @@ from __future__ import annotations
 # Files that MUST exist in a scaffolded repo. Validators report missing
 # entries as errors. Includes the scripts themselves (self-reference is
 # intentional — the manifest doubles as a deployment receipt).
+#
+# ADR files are not listed here — they are resolved by slug (see
+# ADR_SLUGS_REQUIRED below). Listing them by path would force a renumber
+# every time the skill ships a new ADR ahead of an existing one in a
+# target repo.
 EXISTENCE_REQUIRED: list[str] = [
     # Repo-root anchors
     "AGENTS.md",
@@ -33,14 +45,6 @@ EXISTENCE_REQUIRED: list[str] = [
     "docs/processes/harness.md",
     "docs/processes/dev-setup.md",
     "docs/processes/model-policy.md",
-    # docs/decisions/
-    "docs/decisions/001-harness-design.md",
-    "docs/decisions/002-session-exit.md",
-    "docs/decisions/003-evaluator-gate.md",
-    "docs/decisions/004-fleet-model-policy.md",
-    "docs/decisions/005-hard-constraints.md",
-    "docs/decisions/006-pre-approval-critic-gate.md",
-    "docs/decisions/007-harness-validators.md",
     # docs/references/ + docs/generated/ (READMEs only)
     "docs/references/README.md",
     "docs/generated/README.md",
@@ -54,13 +58,36 @@ EXISTENCE_REQUIRED: list[str] = [
     "scripts/harness/check_harness_structure.py",
     "scripts/harness/garbage_collect_docs.py",
     "scripts/harness/_canonical_manifest.py",
+    "scripts/harness/sweep_adr_refs.py",
     # Version marker
     ".harness-version",
 ]
 
 
+# Required ADR slugs. Each slug MUST resolve to exactly one file in
+# `docs/decisions/` whose frontmatter carries `id: <slug>`. The file's
+# filename number is repo-specific and not constrained here.
+#
+# When this skill ships a new ADR, append its slug. Removing a slug is a
+# breaking change to the canonical contract and requires an explicit
+# CHANGELOG entry marked "replacing".
+ADR_SLUGS_REQUIRED: list[str] = [
+    "harness-design",
+    "session-exit",
+    "evaluator-gate",
+    "fleet-model-policy",
+    "hard-constraints",
+    "pre-approval-critic-gate",
+    "harness-validators",
+]
+
+
 # Subset of EXISTENCE_REQUIRED that must additionally carry the 4-key YAML
 # frontmatter block (owner / status / last_reviewed / update_trigger).
+#
+# ADR files are added to this set dynamically by the validators after
+# resolving ADR_SLUGS_REQUIRED to actual files. ADRs additionally require
+# the `id:` key — see REQUIRED_METADATA_KEYS_ADR.
 #
 # Excluded by design:
 #   - CLAUDE.md (symlink to AGENTS.md; would double-count)
@@ -80,13 +107,6 @@ FRONTMATTER_REQUIRED: list[str] = [
     "docs/processes/harness.md",
     "docs/processes/dev-setup.md",
     "docs/processes/model-policy.md",
-    "docs/decisions/001-harness-design.md",
-    "docs/decisions/002-session-exit.md",
-    "docs/decisions/003-evaluator-gate.md",
-    "docs/decisions/004-fleet-model-policy.md",
-    "docs/decisions/005-hard-constraints.md",
-    "docs/decisions/006-pre-approval-critic-gate.md",
-    "docs/decisions/007-harness-validators.md",
     "docs/references/README.md",
     "docs/generated/README.md",
 ]
@@ -97,8 +117,16 @@ REQUIRED_METADATA_KEYS: frozenset[str] = frozenset(
 )
 
 
+# ADR files additionally require `id:`. `legacy_numbers:` is optional;
+# when present, used by sweep_adr_refs.py to rewrite numeric references.
+REQUIRED_METADATA_KEYS_ADR: frozenset[str] = REQUIRED_METADATA_KEYS | {"id"}
+
+
 # Cross-reference assertions — universal only. Every entry is a file that
 # MUST mention every reference string verbatim. Repos extend this themselves.
+#
+# ADR cross-references use the `ADR <slug>` form so they survive
+# renumbering. Filename-based references are NOT required here.
 REQUIRED_REFERENCES: dict[str, list[str]] = {
     "AGENTS.md": [
         "ARCHITECTURE.md",
@@ -118,7 +146,7 @@ REQUIRED_REFERENCES: dict[str, list[str]] = {
         "processes/",
     ],
     "docs/processes/harness.md": [
-        "../decisions/001-harness-design.md",
+        "ADR harness-design",
         "../PLANS.md",
     ],
 }

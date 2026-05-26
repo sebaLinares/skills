@@ -8,7 +8,7 @@ update_trigger: on-harness-change
 # Harness — Operating Manual
 
 This is the day-to-day manual for how work gets done in this repo with an AI
-coding agent. The *why* behind it lives in [ADR 001](../decisions/001-harness-design.md);
+coding agent. The *why* behind it lives in [ADR harness-design](../decisions/001-harness-design.md);
 this doc tells you *how* to actually do the work.
 
 Read this the first time you pick up a task in this repo. Re-read the phase
@@ -179,7 +179,7 @@ from `Not started` to `Active` in `FEATURES.md`.
 Drafting an ExecPlan invokes the `harness-planner` subagent. The
 pre-approval critic auto-fires when the subagent returns and writes
 its verdict into the plan's `## Pre-approval critic transcript`
-section. See [ADR 006](../decisions/006-pre-approval-critic-gate.md).
+section. See [ADR pre-approval-critic-gate](../decisions/006-pre-approval-critic-gate.md).
 
 | Step | Owner | Action |
 |---|---|---|
@@ -247,7 +247,7 @@ command (universal shape `<evaluator-cmd> <plan-path>`). The Evaluator
 runs in a context that does not share state with this session and
 writes a verdict block into the plan's `## Evaluator transcript`
 section; this is the worker/checker split applied to plan completion
-(see [ADR 003](../decisions/003-evaluator-gate.md)). The agent does
+(see [ADR evaluator-gate](../decisions/003-evaluator-gate.md)). The agent does
 **not** edit that section.
 
 Read the latest block. If Alignment and Acceptance are both `pass`,
@@ -472,7 +472,7 @@ re-run the initialization checklist on the affected surface.
 
 ## What the harness contains today
 
-See [ADR 001 — Harness Engineering for AI Agent Usage](../decisions/001-harness-design.md)
+See [ADR harness-design — Harness Engineering for AI Agent Usage](../decisions/001-harness-design.md)
 for the current inventory (guides, sensors, what's deferred) and the regulation
 categories in scope.
 
@@ -495,22 +495,58 @@ enforce the documentation contract:
 Both honour `HARNESS_BYPASS="<reason>"`. The shared manifest lives at
 `scripts/harness/_canonical_manifest.py` — every CHANGELOG entry that
 touches the canonical set updates the manifest in the same entry. See
-[ADR 007 — Harness validators](../decisions/007-harness-validators.md)
+[ADR harness-validators — Harness validators](../decisions/007-harness-validators.md)
 for the design and the explicit non-shipping of Makefile / pre-commit
 / CI wiring (stack-specific; the contract lives in `dev-setup.md`
 § Harness validators).
 
 ---
 
-## Appendix — ADR format
+## Appendix — ADR identity and format
+
+### Identity
+
+Every ADR's **canonical identity is its `id:` slug** (kebab-case, set in
+frontmatter), not its filename number. The number prefix in the
+filename (`NNN-<slug>.md`) is a per-repo sort key — it tells you when
+the ADR landed in *this* repo, nothing more. The same ADR may live at
+different numbers in different scaffolded repos because the init-docs
+scaffold appends after the highest existing number rather than forcing
+renumbers.
+
+**Reference ADRs by slug, never by number.** Inside docs, write
+`ADR <slug>` (e.g. `ADR harness-design`, `ADR evaluator-gate`).
+Markdown links pair slug display text with the current filename:
+
+    [ADR harness-design](../decisions/001-harness-design.md)
+
+If the file gets renumbered locally, the slug stays valid and the
+sweep tool (`scripts/harness/sweep_adr_refs.py`) updates URLs. Bare
+numeric references (`ADR 003`) break the moment the file is renumbered;
+the sweep tool migrates them on demand.
+
+### Frontmatter
+
+    ---
+    id: <slug>                  # required, unique within docs/decisions/
+    owner: <repo-name>
+    status: accepted | superseded
+    last_reviewed: YYYY-MM-DD
+    update_trigger: on-supersession
+    legacy_numbers: [N1, N2]    # optional; old numbers this ADR carried,
+                                # used by sweep tool to rewrite refs.
+                                # Delete once migration is complete.
+    ---
+
+### Format
 
 Every ADR in `docs/decisions/` follows this four-section template:
 
 ~~~
-# NNN — Title
+# ADR <slug> — Title
 
 ## Status
-Accepted | Superseded by NNN
+Accepted | Superseded by <slug>
 
 ## Context
 Why this decision needed to be made.

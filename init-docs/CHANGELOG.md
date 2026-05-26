@@ -20,6 +20,153 @@ one entry at a time.
 
 ---
 
+## 2026-05-28 — ADR identity by slug, not number
+
+**What:** ADRs are now identified by their `id:` frontmatter slug
+(kebab-case, unique within `docs/decisions/`), not by filename number.
+The number prefix in the filename (`NNN-<slug>.md`) becomes a per-repo
+sort key only — when the harness scaffolds into a target repo with
+existing ADRs, harness ADRs are appended after the highest existing
+number rather than forcing the user to renumber their own decisions
+(or worse, silently colliding with them). Cross-references inside docs
+use the slug form `ADR <slug>` (e.g., `ADR evaluator-gate`), which
+survives any per-repo renumbering. Numeric forms (`ADR 003`,
+`ADR-003`) are still legible to humans but are migration debt — the
+new `sweep_adr_refs.py` tool rewrites them to slug form.
+
+The seven harness ADRs ship with `id:` frontmatter and the optional
+`legacy_numbers: []` field. When the scaffold-into-existing algorithm
+(Step 13 § Assignment algorithm) lands a harness ADR at a non-canonical
+number, it populates `legacy_numbers` with the canonical number so the
+sweep tool can rewrite pre-existing references in the target repo's
+own docs. The field is migration-only; users delete it once their
+sweep is complete.
+
+The canonical manifest (`_canonical_manifest.py`) grows
+`ADR_SLUGS_REQUIRED` (the seven slugs the harness owns) and
+`REQUIRED_METADATA_KEYS_ADR` (the 4-key block plus `id:`). ADR file
+paths are removed from `EXISTENCE_REQUIRED` and `FRONTMATTER_REQUIRED`
+— the validators resolve slugs to files by scanning
+`docs/decisions/` for matching frontmatter. `check_harness_structure.py`
+gains a slug-uniqueness check; `garbage_collect_docs.py` extends its
+strict frontmatter pass to resolved ADR files. `REQUIRED_REFERENCES`
+asserts `ADR <slug>` strings rather than canonical filename paths so
+the cross-reference check survives renumbering.
+
+All cross-references inside the harness's own assets — `AGENTS.md`,
+`PLANS.md`, `harness.md`, `model-policy.md`, `dev-setup.md`,
+`docs-README.md`, the seven ADRs themselves, and the two hook scripts
+— have been rewritten to slug form. `harness.md` grows an "ADR identity
+and format" appendix documenting the slug convention, the
+`legacy_numbers:` migration field, and the updated `# ADR <slug> —
+Title` header shape.
+
+**Files touched:** `assets/001-harness-design.md` through
+`assets/007-harness-validators.md` (frontmatter + header + body refs),
+`assets/AGENTS.md`, `assets/PLANS.md`, `assets/harness.md`,
+`assets/docs-README.md`, `assets/dev-setup.md`,
+`assets/model-policy.md`, `assets/references-README.md`,
+`assets/harness-planner-critic-hook.mjs`,
+`assets/verify-covers-hook.sh`,
+`assets/scripts/_canonical_manifest.py`,
+`assets/scripts/check_harness_structure.py`,
+`assets/scripts/garbage_collect_docs.py`,
+`assets/scripts/sweep_adr_refs.py` (new),
+`SKILL.md`, `CHANGELOG.md`.
+
+**How to apply:**
+
+1. **Add `id:` frontmatter to each harness ADR in the target repo.**
+   The seven slugs are `harness-design`, `session-exit`,
+   `evaluator-gate`, `fleet-model-policy`, `hard-constraints`,
+   `pre-approval-critic-gate`, `harness-validators`. For each ADR
+   file under `docs/decisions/` whose filename matches a harness ADR
+   (typically `001-harness-design.md` through
+   `007-harness-validators.md`), read its frontmatter. If `id:` is
+   already present, skip. Otherwise insert `id: <slug>` as the first
+   key inside the `---` block and `legacy_numbers: []` as the last
+   key. Also update the H1 header from `# NNN — Title` to
+   `# ADR <slug> — Title`. Skip a file individually if both `id:`
+   and the slug-form header are already present. **Stop with conflict
+   report** if any harness ADR file is missing entirely (re-run
+   scaffold first) or if a file at a harness-ADR filename carries a
+   different `id:` value (collision; user must resolve manually).
+
+2. **Replace the four harness validator scripts** at
+   `scripts/harness/` with the new versions from
+   `~/.claude/skills/init-docs/assets/scripts/`:
+   `_canonical_manifest.py`, `check_harness_structure.py`,
+   `garbage_collect_docs.py`, and the new `sweep_adr_refs.py`. The
+   first three are drop-in replacements (same CLI surface);
+   `sweep_adr_refs.py` is new — `chmod +x` it. Skip individually if
+   a file is byte-identical to the asset. **Stop with conflict
+   report** if any of the three existing scripts has been locally
+   modified beyond cosmetic whitespace; the changes are mechanical
+   and an unexpected local edit suggests divergence the operator
+   should review.
+
+3. **Rewrite slug-form references in the harness-shipped docs**
+   inside the target repo. For each of `AGENTS.md`, `docs/PLANS.md`,
+   `docs/processes/harness.md`, `docs/processes/model-policy.md`,
+   `docs/processes/dev-setup.md`, `docs/README.md`,
+   `docs/references/README.md`, `.claude/hooks/verify-covers-hook.sh`,
+   `.claude/hooks/harness-planner-critic-hook.mjs`, and the seven
+   harness ADR files themselves: compare against
+   `~/.claude/skills/init-docs/assets/` and apply the
+   `ADR NNN` → `ADR <slug>` text rewrites that appear in the assets
+   but not yet in the target. The simplest mechanical path is to run
+   `python3 scripts/harness/sweep_adr_refs.py --write` once after
+   step 2 — the sweep tool reads each ADR's slug + current filename
+   number and rewrites all numeric refs across the repo's text scan
+   set. Skip individually if the target file is byte-identical to
+   the harness asset, or if the file already contains the slug form
+   and no numeric form. **Stop with conflict report** if a file has
+   been renamed or its `## ADR identity` / `## Hard constraints`
+   sections (where applicable) restructured such that targeted
+   rewrites become ambiguous.
+
+4. **Add the "ADR identity and format" appendix to
+   `docs/processes/harness.md`.** Check whether the file's final
+   `## Appendix` heading is `## Appendix — ADR identity and format`.
+   If so, skip. Otherwise replace the existing `## Appendix — ADR
+   format` heading + body with the new appendix from
+   `~/.claude/skills/init-docs/assets/harness.md` § Appendix.
+   **Stop with conflict report** if the final `## Appendix` section
+   has been renamed or its body locally modified beyond the harness
+   default.
+
+5. **Run the sweep tool to migrate the operator's own docs.** After
+   steps 1–4 are clean, run
+   `python3 scripts/harness/sweep_adr_refs.py` (dry-run) and show
+   the proposed rewrites. These will cover any docs the operator
+   wrote that referenced harness ADRs by number (e.g., analysis
+   docs, exec-plans, tickets). On the operator's confirmation, run
+   `python3 scripts/harness/sweep_adr_refs.py --write`. The tool is
+   idempotent — a second `--write` is a no-op once the repo is
+   clean. **Do not stop the audit if the operator declines the
+   sweep** — slug refs are recommended but not required; legacy
+   numeric refs continue to resolve as long as the file at that
+   number exists. Surface the deferred sweep in the audit summary
+   so the operator can run it later.
+
+6. **Verify with the structure check.** Run
+   `python3 scripts/harness/check_harness_structure.py --dry-run`.
+   Expected: zero findings related to ADR existence, frontmatter,
+   or cross-references. The dry-run flag means findings are reported
+   to stderr but exit is always 0; flip to a real run (no flag) once
+   the audit is clean. **Stop with conflict report** if the dry-run
+   surfaces any ADR-related finding — that indicates one of steps
+   1–4 did not complete idempotently and the marker must not
+   advance.
+
+**Stack-specific notes:** None. The slug convention, the manifest
+structure, and the sweep tool are stack-agnostic. The Python validators
+remain stdlib-only (≥ 3.9). Wiring (pre-commit / Makefile / CI) is
+unchanged — the new `sweep_adr_refs.py` is a one-shot migration tool,
+not a recurring gate, and does not belong in the standing CI loop.
+
+---
+
 ## 2026-05-27 — Cold-start test and initialization checklist as scaffolded artifacts
 
 **What:** Ships two new process documents and a closing Bootstrap-contract

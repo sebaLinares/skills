@@ -4,7 +4,7 @@
  * harness-planner critic hook — fires on SubagentStop, runs codex
  * adversarial-review synchronously against the just-written ExecPlan,
  * and writes the verdict into the plan's "## Pre-approval critic
- * transcript" section. See ADR 006.
+ * transcript" section. See ADR pre-approval-critic-gate.
  *
  * Triggered only when subagent_type === "harness-planner". All other
  * subagents are silently passed through (exit 0).

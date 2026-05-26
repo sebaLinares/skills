@@ -39,7 +39,7 @@ is `codex:adversarial-review`; the hook invokes the underlying
 `codex-companion.mjs adversarial-review` script directly because the slash
 command sets `disable-model-invocation: true`. The verdict lands in the
 plan's `## Pre-approval critic transcript` section. See
-[ADR 006](decisions/006-pre-approval-critic-gate.md).
+[ADR pre-approval-critic-gate](decisions/006-pre-approval-critic-gate.md).
 
 ## Frontmatter
 
@@ -118,7 +118,7 @@ independent **Pre-approval critic** pass. The critic is a coding agent or
 tool that does **not** share state with the plan's worker — a fresh
 subagent, separate session, external CLI agent, or human reviewer.
 Independence is structural: same agent, same session, same context does not
-qualify. See ADR 006 for the why.
+qualify. See ADR pre-approval-critic-gate for the why.
 
 **Invocation contract.** The default critic is `codex:adversarial-review`
 (the slash command name), auto-fired by
@@ -164,7 +164,7 @@ No plan moves from `docs/exec-plans/active/` to
 The Evaluator is a coding agent or tool that does **not** share state
 with the plan's worker — a fresh subagent, separate session, external
 CLI agent, or human reviewer. Independence is structural: same agent,
-same session, same context does not qualify. See ADR 003 for the why.
+same session, same context does not qualify. See ADR evaluator-gate for the why.
 
 **Invocation contract.** Universal shape `<evaluator-cmd> <plan-path>`.
 The consuming repo declares the concrete command in

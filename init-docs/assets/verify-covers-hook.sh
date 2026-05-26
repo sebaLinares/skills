@@ -5,7 +5,7 @@
 # prefix-matched by any covers: glob in an active ExecPlan
 # (`docs/exec-plans/active/*.md`).
 #
-# Contract (ADR 005 hard constraint, covers: rule):
+# Contract (ADR hard-constraints, covers: rule):
 #   Before each Edit/Write, the target path MUST match the current plan's
 #   covers:. The pre-commit plan-coverage sensor is the last line of
 #   defence; this hook is the first.

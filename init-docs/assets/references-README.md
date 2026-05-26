@@ -10,7 +10,7 @@ update_trigger: on-convention-change
 Authoritative specs the code must satisfy, extracted from sources outside
 this repo. Lives here because of the harness operating principle:
 *if it is not in the repo, it does not exist* (see
-[ADR 001](../decisions/001-harness-design.md)).
+[ADR harness-design](../decisions/001-harness-design.md)).
 
 **Mental model:** stuff the code must conform to, that doesn't live in this
 code itself.

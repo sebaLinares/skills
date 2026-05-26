@@ -36,6 +36,36 @@ from pathlib import Path
 import _canonical_manifest as manifest
 
 
+def discover_adr_files(repo_root: Path) -> dict[str, Path]:
+    """Best-effort slug → file resolver for ADRs. Errors silenced —
+    check_harness_structure.py is the authority for slug-uniqueness
+    and missing-id reporting; the GC just needs the set of resolved
+    files so it applies the strict frontmatter pass to them."""
+    by_slug: dict[str, Path] = {}
+    decisions_root = repo_root / "docs" / "decisions"
+    if not decisions_root.exists():
+        return by_slug
+    for path in sorted(decisions_root.glob("*.md")):
+        if path.is_symlink() or not path.is_file():
+            continue
+        if path.name.lower() == "readme.md":
+            continue
+        content = path.read_text(encoding="utf-8")
+        if not content.startswith("---\n"):
+            continue
+        end = content.find("\n---\n", 4)
+        if end == -1:
+            continue
+        for line in content[4:end].splitlines():
+            stripped = line.strip()
+            if stripped.startswith("id:"):
+                slug = stripped.split(":", 1)[1].strip().strip('"').strip("'")
+                if slug and slug not in by_slug:
+                    by_slug[slug] = path
+                break
+    return by_slug
+
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 DOC_REFERENCE_RE = re.compile(r"\bdocs/[A-Za-z0-9_./-]+\.(?:md|json|csv)\b")
@@ -147,6 +177,10 @@ def metadata_findings(
     frontmatter_strict = {
         (REPO_ROOT / p).resolve() for p in manifest.FRONTMATTER_REQUIRED
     }
+    # ADRs identified by slug are also strict — resolve and add.
+    for slug, path in discover_adr_files(REPO_ROOT).items():
+        if slug in manifest.ADR_SLUGS_REQUIRED:
+            frontmatter_strict.add(path.resolve())
     required_keys = set(manifest.REQUIRED_METADATA_KEYS)
 
     candidates = set(docs_files)

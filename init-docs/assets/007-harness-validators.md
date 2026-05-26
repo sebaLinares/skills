@@ -1,16 +1,18 @@
 ---
+id: harness-validators
 owner: {{REPO_NAME}}
 status: accepted
-last_reviewed: 2026-05-26
+last_reviewed: 2026-05-28
 update_trigger: on-supersession
+legacy_numbers: []
 ---
 
-# ADR 007 — Harness validators (structure check + doc garbage collector)
+# ADR harness-validators — Harness validators (structure check + doc garbage collector)
 
 ## Status
 
-Accepted; extends ADR 001 (harness design), ADR 003 (Evaluator gate), and
-ADR 005 (hard constraints) by adding mechanical sensors for the
+Accepted; extends ADR harness-design, ADR evaluator-gate, and
+ADR hard-constraints by adding mechanical sensors for the
 documentation contract those ADRs establish.
 
 ## Context
@@ -24,7 +26,7 @@ section breaks an inbound reference, a forgotten `last_reviewed` date
 leaves a doc invisibly stale, a dashboard file lands under `docs/` when
 it should have lived in `docs/generated/`.
 
-ADR 003 names the worker/checker split that closes one half of this
+ADR evaluator-gate names the worker/checker split that closes one half of this
 problem (the Evaluator gates plan completion). The other half — *is the
 documentation contract intact?* — has no mechanical enforcer in the
 scaffolded harness. ms-search (this skill's reference user) ships two
@@ -58,7 +60,7 @@ future init-docs CHANGELOG entry that adds, renames, or removes a
 canonical file MUST update this manifest in the same entry.
 
 Both scripts honour `HARNESS_BYPASS="<reason>"` (same convention as the
-plan-coverage sensor — see ADR 003) and accept `--dry-run` for skill
+plan-coverage sensor — see ADR evaluator-gate) and accept `--dry-run` for skill
 self-verification (reports findings to stderr, always exits 0).
 
 ## Frontmatter scope
@@ -91,7 +93,7 @@ The skill does **not** install:
 - A GitHub Actions workflow that runs them on PRs.
 
 This mirrors the posture established by the plan-coverage sensor in the
-2026-04-20 CHANGELOG entry (ADR 003 in the ms-search reference repo).
+2026-04-20 CHANGELOG entry (ADR evaluator-gate in the ms-search reference repo).
 Wiring is stack-specific; the skill ships the contract in
 `docs/processes/dev-setup.md § Harness validators`, and the repo's
 owners translate it into Makefile / pre-commit / Task / just / CI as

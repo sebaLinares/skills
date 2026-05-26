@@ -123,7 +123,7 @@ Wiring contract (intentionally not shipped — fill in for this stack):
 - **Nightly / weekly:** invoke `garbage_collect_docs.py --strict`.
 
 Examples (Makefile, pre-commit, GitHub Actions) live in
-[ADR 007 — Harness validators](../decisions/007-harness-validators.md)
+[ADR harness-validators — Harness validators](../decisions/007-harness-validators.md)
 § Appendix — explicitly marked example-only. Stack-native
 re-implementations (Node, Go, etc.) are acceptable as long as the
 contract documented here is preserved.
@@ -176,7 +176,7 @@ Fleet default per `docs/processes/model-policy.md`. Override only if
     #   criteria actually verified with evidence — test transcripts,
     #   observable outputs — not just declared green?). Quality is
     #   optional; failing Quality routes to tech-debt-tracker.md, not
-    #   completion blocker. Report verdicts per ADR 003 block shape."
+    #   completion blocker. Report verdicts per ADR evaluator-gate block shape."
 
 ### Tool resolution
 
@@ -192,7 +192,7 @@ which the Evaluator needs to carry its verdict-block instructions. The
 focus text above is framed as adversarial verification of conformance so
 the tool's "challenge the chosen approach" framing matches the
 Evaluator's "challenge the worker's claim of completion" purpose — see
-ADR 003 § Tool selection.
+ADR evaluator-gate § Tool selection.
 
 *Independence assertion (single line):* confirm that this command
 runs in a context that does **not** share state with the worker's
@@ -207,7 +207,7 @@ every ExecPlan. It reads the plan plus the working tree it references
 and writes a verdict block into the plan's `## Evaluator transcript`
 section (Alignment, Acceptance, optionally Quality). The worker that
 produced the plan never edits that section — independence is
-structural, not convention-only. See ADR 003 and `docs/PLANS.md` →
+structural, not convention-only. See ADR evaluator-gate and `docs/PLANS.md` →
 "The `Evaluator transcript` section" for the full contract.
 
 When the codex plugin is unavailable, fall back to a fresh Claude

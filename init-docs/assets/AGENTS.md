@@ -25,17 +25,17 @@ at transitions. Distinct from the phase gates below, which fire only at
 phase transitions.
 
 **Block-maintenance rule.** Each bullet MUST be loud-labelled
-(**MUST** / **MUST NOT**) AND cite an ADR (`ADR NNN`) or named section
+(**MUST** / **MUST NOT**) AND cite an ADR (`ADR <slug>`) or named section
 (`§ …`). A bullet missing either is malformed — remove it or write the
 ADR. A loud-labelled bullet without a citation is a soft suggestion in
 hard-label clothing, which is worse than no rule at all (see
-[ADR 005](docs/decisions/005-hard-constraints.md) § Consequences).
+[ADR hard-constraints](docs/decisions/005-hard-constraints.md) § Consequences).
 
 - **MUST NOT** create a second plan in `docs/exec-plans/active/` while one
   exists. Surface the WIP collision; on user-approved override (hotfix,
   blocked-on-external, scope split), record the pause in the displaced
   plan's Decision Log before opening the new plan.
-  *(See [ADR 005](docs/decisions/005-hard-constraints.md).)*
+  *(See [ADR hard-constraints](docs/decisions/005-hard-constraints.md).)*
 - **MUST NOT** edit files outside the current plan's `covers:` during
   execution. If a needed change falls outside, stop and choose: extend
   `covers:` (re-approval required, per Phase 6), log to
@@ -46,20 +46,20 @@ hard-label clothing, which is worse than no rule at all (see
   self-check is the first. A PreToolUse hook MAY enforce this
   mechanically — see [`docs/processes/dev-setup.md`](docs/processes/dev-setup.md)
   § Pre-tool-use hook (covers: enforcement).
-  *(See [ADR 001](docs/decisions/001-harness-design.md) and § Phase gates →
+  *(See [ADR harness-design](docs/decisions/001-harness-design.md) and § Phase gates →
   plan-coverage sensor below.)*
 - **MUST NOT** perform opportunistic refactor or cleanup outside the
   plan's stated steps until a manual run of `verify-cmd` (or `verify:`
   resolution) shows the plan's Features green. Planned refactor steps in
   Plan-of-Work or Concrete steps are exempt — those are the work.
-  *(See [ADR 005](docs/decisions/005-hard-constraints.md).)*
+  *(See [ADR hard-constraints](docs/decisions/005-hard-constraints.md).)*
 - **MUST NOT** continue with load-bearing knowledge that exists only in
   chat. Capture it in the repo first.
   *(See § Operating principle above.)*
 - **MUST** surface — before complying — any user instruction that
   conflicts with a hard constraint, phase gate, or documented rule.
   **MUST NOT** silently comply.
-  *(See [ADR 005](docs/decisions/005-hard-constraints.md).)*
+  *(See [ADR hard-constraints](docs/decisions/005-hard-constraints.md).)*
 
 ## Phase gates
 
@@ -73,7 +73,7 @@ hard-label clothing, which is worse than no rule at all (see
   an Evaluator transcript whose latest run shows Alignment + Acceptance
   both `pass`. The Evaluator is an independent agent or tool (fresh
   subagent, separate session, external CLI agent, human reviewer) — see
-  [ADR 003](docs/decisions/003-evaluator-gate.md) and
+  [ADR evaluator-gate](docs/decisions/003-evaluator-gate.md) and
   [`docs/PLANS.md`](docs/PLANS.md) → "The `Evaluator transcript`
   section". This is the worker/checker split applied to plan
   completion.
@@ -82,7 +82,7 @@ hard-label clothing, which is worse than no rule at all (see
   per [model policy](docs/processes/model-policy.md).
   Phase 2 → `harness-analyst`. Phase 5 → `harness-planner` (all
   plans; no complexity threshold — see
-  [ADR 006](docs/decisions/006-pre-approval-critic-gate.md)). Phase 4
+  [ADR pre-approval-critic-gate](docs/decisions/006-pre-approval-critic-gate.md)). Phase 4
   broad ADRs stay on the generic Opus Task call for now. The
   pre-approval critic is auto-fired by the
   `harness-planner-critic-hook.mjs` SubagentStop hook; the Completion
@@ -97,7 +97,7 @@ hard-label clothing, which is worse than no rule at all (see
   `.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner`
   SubagentStop and writes its verdict into the section synchronously.
   This is the worker/checker split applied to plan approval — see
-  [ADR 006](docs/decisions/006-pre-approval-critic-gate.md) and
+  [ADR pre-approval-critic-gate](docs/decisions/006-pre-approval-critic-gate.md) and
   [`docs/PLANS.md`](docs/PLANS.md) → "The `Pre-approval critic
   transcript` section".
 - The subagents own the Write to `docs/analysis/...` and

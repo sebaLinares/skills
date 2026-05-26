@@ -1,11 +1,13 @@
 ---
+id: evaluator-gate
 owner: {{REPO_NAME}}
 status: accepted
-last_reviewed: 2026-05-26
+last_reviewed: 2026-05-28
 update_trigger: on-supersession
+legacy_numbers: []
 ---
 
-# ADR 003 — Evaluator gate at plan completion
+# ADR evaluator-gate — Evaluator gate at plan completion
 
 ## Status
 
@@ -19,7 +21,7 @@ check between "I think I'm done" and "the repo says I'm done." That structure
 is biased toward overconfidence (Guo et al. 2017): the same context that
 produced the answer also grades it.
 
-ADR 002 already partitions one slice of this — the verifier loop, not the
+ADR session-exit already partitions one slice of this — the verifier loop, not the
 worker, writes FEATURES.md `Passing`. The worker/checker split named in
 [`../CONTEXT.md`](../CONTEXT.md) is the umbrella principle. This ADR adds the
 second concrete enforcer: a gate at the `active/` → `completed/` transition
@@ -89,7 +91,7 @@ First, the orchestrator cannot invoke `/codex:adversarial-review` as a
 slash command — codex-plugin-cc sets `disable-model-invocation: true` on
 its review commands. The Evaluator therefore runs through the underlying
 companion script via Bash. This is the same dispatch path the
-pre-approval critic hook (ADR 006) uses, kept consistent so both
+pre-approval critic hook (ADR pre-approval-critic-gate) uses, kept consistent so both
 worker/checker gates share one tooling story.
 
 Second, the choice of `adversarial-review` over `review` is forced by

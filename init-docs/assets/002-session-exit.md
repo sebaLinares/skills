@@ -1,11 +1,13 @@
 ---
+id: session-exit
 owner: {{REPO_NAME}}
 status: accepted
-last_reviewed: 2026-05-26
+last_reviewed: 2026-05-28
 update_trigger: on-supersession
+legacy_numbers: []
 ---
 
-# ADR 002 — Session exit closes the bootstrap asymmetry
+# ADR session-exit — Session exit closes the bootstrap asymmetry
 
 ## Status
 

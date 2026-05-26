@@ -1,15 +1,17 @@
 ---
+id: fleet-model-policy
 owner: {{REPO_NAME}}
 status: accepted
-last_reviewed: 2026-05-26
+last_reviewed: 2026-05-28
 update_trigger: on-supersession
+legacy_numbers: []
 ---
 
-# ADR 004 — Fleet model policy
+# ADR fleet-model-policy — Fleet model policy
 
 ## Status
 
-Accepted; extends ADR 001 on model selection.
+Accepted; extends ADR harness-design on model selection.
 
 ## Context
 

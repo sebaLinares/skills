@@ -4,11 +4,15 @@
 Reads the canonical manifest (_canonical_manifest.py) and asserts:
 
   1. Every path in EXISTENCE_REQUIRED is present on disk.
-  2. Every path in FRONTMATTER_REQUIRED carries the 4-key YAML block.
-  3. Every entry in REQUIRED_REFERENCES contains its required substrings.
-  4. No forbidden ephemera under docs/ (FORBIDDEN_DOC_GLOBS).
-  5. No absolute paths in scanned text files (ABSOLUTE_PATH_PATTERNS).
-  6. docs/generated/ is not described as canonical knowledge.
+  2. Every slug in ADR_SLUGS_REQUIRED resolves to exactly one ADR file
+     in docs/decisions/ (matched by `id:` frontmatter). No two ADR
+     files share a slug.
+  3. Every path in FRONTMATTER_REQUIRED carries the 4-key YAML block;
+     every resolved ADR file additionally carries `id:`.
+  4. Every entry in REQUIRED_REFERENCES contains its required substrings.
+  5. No forbidden ephemera under docs/ (FORBIDDEN_DOC_GLOBS).
+  6. No absolute paths in scanned text files (ABSOLUTE_PATH_PATTERNS).
+  7. docs/generated/ is not described as canonical knowledge.
 
 Bypass: set HARNESS_BYPASS="<reason>" to short-circuit with exit 0.
 
@@ -22,6 +26,7 @@ import argparse
 import os
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 import _canonical_manifest as manifest
@@ -56,6 +61,47 @@ def parse_front_matter(path: Path) -> dict[str, str]:
     return metadata
 
 
+def discover_adr_files() -> tuple[dict[str, Path], list[str]]:
+    """Walk docs/decisions/ and return (slug -> path) plus error messages.
+
+    Errors are returned for:
+      - missing `id:` frontmatter on an ADR-shaped file.
+      - duplicate `id:` slugs across ADR files.
+    """
+    errors: list[str] = []
+    by_slug: dict[str, list[Path]] = defaultdict(list)
+    decisions_root = REPO_ROOT / "docs" / "decisions"
+    if not decisions_root.exists():
+        return {}, errors
+    for path in sorted(decisions_root.glob("*.md")):
+        if path.is_symlink() or not path.is_file():
+            continue
+        if path.name.lower() == "readme.md":
+            continue
+        metadata = parse_front_matter(path)
+        slug = metadata.get("id", "").strip()
+        if not slug:
+            errors.append(
+                f"{relative(path)}: ADR is missing `id:` frontmatter. "
+                "Every ADR's canonical identity is the slug, not the "
+                "filename number."
+            )
+            continue
+        by_slug[slug].append(path)
+    resolved: dict[str, Path] = {}
+    for slug, paths in by_slug.items():
+        if len(paths) > 1:
+            joined = ", ".join(relative(p) for p in paths)
+            errors.append(
+                f"docs/decisions/: duplicate ADR slug `{slug}` found in "
+                f"{joined}. Each `id:` must be unique within "
+                "docs/decisions/."
+            )
+            continue
+        resolved[slug] = paths[0]
+    return resolved, errors
+
+
 def iter_text_sources() -> list[Path]:
     """Resolve every text file scanned for content checks."""
     files: set[Path] = set()
@@ -75,7 +121,7 @@ def iter_text_sources() -> list[Path]:
     return sorted(p for p in files if p.is_file() and p.resolve() != script_path)
 
 
-def check_existence() -> list[str]:
+def check_existence(adr_files: dict[str, Path]) -> list[str]:
     errors: list[str] = []
     for relative_path in manifest.EXISTENCE_REQUIRED:
         target = REPO_ROOT / relative_path
@@ -85,24 +131,40 @@ def check_existence() -> list[str]:
                 f"{relative_path}: missing required harness file. "
                 "Re-run the init-docs skill in audit mode to restore it."
             )
+    for slug in manifest.ADR_SLUGS_REQUIRED:
+        if slug not in adr_files:
+            errors.append(
+                f"docs/decisions/: missing ADR with `id: {slug}`. "
+                "Re-run the init-docs skill in audit mode to restore it."
+            )
     return errors
 
 
-def check_frontmatter() -> list[str]:
+def check_frontmatter(adr_files: dict[str, Path]) -> list[str]:
     errors: list[str] = []
-    required_keys = set(manifest.REQUIRED_METADATA_KEYS)
+    base_keys = set(manifest.REQUIRED_METADATA_KEYS)
+    adr_keys = set(manifest.REQUIRED_METADATA_KEYS_ADR)
     for relative_path in manifest.FRONTMATTER_REQUIRED:
         target = REPO_ROOT / relative_path
         if not target.exists():
             # existence check already flagged it
             continue
         metadata = parse_front_matter(target)
-        missing = sorted(required_keys - set(metadata))
+        missing = sorted(base_keys - set(metadata))
         if missing:
             errors.append(
                 f"{relative_path}: missing metadata keys "
                 f"{', '.join(missing)}. Add YAML front matter with "
                 "owner, status, last_reviewed, and update_trigger."
+            )
+    for slug, path in adr_files.items():
+        metadata = parse_front_matter(path)
+        missing = sorted(adr_keys - set(metadata))
+        if missing:
+            errors.append(
+                f"{relative(path)}: ADR missing metadata keys "
+                f"{', '.join(missing)}. ADRs require id, owner, status, "
+                "last_reviewed, and update_trigger."
             )
     return errors
 
@@ -192,9 +254,12 @@ def main() -> int:
         )
         return 0
 
+    adr_files, adr_errors = discover_adr_files()
+
     errors: list[str] = []
-    errors.extend(check_existence())
-    errors.extend(check_frontmatter())
+    errors.extend(adr_errors)
+    errors.extend(check_existence(adr_files))
+    errors.extend(check_frontmatter(adr_files))
     errors.extend(check_required_references())
     errors.extend(check_forbidden_docs())
     errors.extend(check_text_content())
