@@ -54,7 +54,9 @@ worker/checker split.
 `assets/dev-setup.md`, `assets/model-policy.md`,
 `assets/001-harness-design.md`, `assets/002-session-exit.md`,
 `assets/003-evaluator-gate.md`, `assets/004-fleet-model-policy.md`,
-`assets/005-hard-constraints.md`, `assets/references-README.md`,
+`assets/005-hard-constraints.md`,
+`assets/006-pre-approval-critic-gate.md`,
+`assets/references-README.md`,
 `assets/generated-README.md`, `SKILL.md`, `CHANGELOG.md`.
 
 **How to apply:**
@@ -82,7 +84,7 @@ worker/checker split.
    `docs/FEATURES.md`, `docs/tech-debt-tracker.md`,
    `docs/processes/harness.md`, `docs/processes/dev-setup.md`,
    `docs/processes/model-policy.md`,
-   `docs/decisions/00[1-5]-*.md`, the new ADR from step 2,
+   `docs/decisions/00[1-6]-*.md`, the new ADR from step 2,
    `docs/references/README.md`, `docs/generated/README.md` — check
    whether the file starts with `---\n` (YAML frontmatter). If absent,
    prepend the 4-key block:

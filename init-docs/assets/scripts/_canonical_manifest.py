@@ -39,6 +39,7 @@ EXISTENCE_REQUIRED: list[str] = [
     "docs/decisions/003-evaluator-gate.md",
     "docs/decisions/004-fleet-model-policy.md",
     "docs/decisions/005-hard-constraints.md",
+    "docs/decisions/006-pre-approval-critic-gate.md",
     "docs/decisions/007-harness-validators.md",
     # docs/references/ + docs/generated/ (READMEs only)
     "docs/references/README.md",
@@ -84,6 +85,7 @@ FRONTMATTER_REQUIRED: list[str] = [
     "docs/decisions/003-evaluator-gate.md",
     "docs/decisions/004-fleet-model-policy.md",
     "docs/decisions/005-hard-constraints.md",
+    "docs/decisions/006-pre-approval-critic-gate.md",
     "docs/decisions/007-harness-validators.md",
     "docs/references/README.md",
     "docs/generated/README.md",
