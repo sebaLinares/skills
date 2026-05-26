@@ -83,6 +83,8 @@ How-we-work: guidelines, conventions, runbooks.
 - [Harness — Operating Manual](processes/harness.md) — day-to-day workflow phases, phase gates, steering loop; implements ADR 001 `#ai-harness` `#guideline`
 - [Developer setup](processes/dev-setup.md) — local toolchain, pre-commit hook, common commands — **fill in for this stack** `#ai-harness` `#guideline`
 - [Model policy](processes/model-policy.md) — fleet-wide per-step model assignments and codex command reference `#ai-harness` `#guideline`
+- [Initialization checklist](processes/initialization-checklist.md) — the bootstrap contract; four conditions every operable repo must satisfy `#ai-harness` `#guideline`
+- [Cold-start test](processes/cold-start-test.md) — quarterly legibility ritual; five questions answered from repo content alone `#ai-harness` `#guideline`
 
 ## References
 External / legacy specs the code must conform to. See [references/README.md](references/README.md) for convention and the reference-vs-analysis distinction.

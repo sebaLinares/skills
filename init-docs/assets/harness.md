@@ -459,6 +459,15 @@ entry is either a steering-loop input (a regression where a sensor is missing
 or a guide is wrong) or a tech-debt row (an acknowledged hazard). Empty
 `## Failing` is the target state.
 
+**Check the cold-start log.** Once per quarter (or sooner on major
+restructure / onboarding pain), run the [Cold-start
+test](cold-start-test.md). Drift between successive sections in
+`../generated/cold-start-test.md` is a first-class steering-loop input —
+treat it the same as a Failing-features entry. A question the agent could
+not answer means the [bootstrap
+contract](initialization-checklist.md) for that surface has regressed;
+re-run the initialization checklist on the affected surface.
+
 ---
 
 ## What the harness contains today

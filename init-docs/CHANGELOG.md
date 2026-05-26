@@ -20,6 +20,97 @@ one entry at a time.
 
 ---
 
+## 2026-05-27 — Cold-start test and initialization checklist as scaffolded artifacts
+
+**What:** Ships two new process documents and a closing Bootstrap-contract
+verdict in `/init-docs` Step 18. `docs/processes/initialization-checklist.md`
+documents the bootstrap contract — four conditions a freshly-scaffolded repo
+must satisfy to be operable (can start / can test / can see progress / can
+pick up next steps), each mapped to a concrete surface in the repo. Two-level
+pass: *surface* (artifact exists, mechanically checkable post-scaffold) vs.
+*populated* (non-placeholder content). `docs/processes/cold-start-test.md`
+documents the quarterly falsifier ritual: five questions answered in a fresh
+agent session using repo content only, with the transcript appended as a new
+top section to a single rolling log at `docs/generated/cold-start-test.md`.
+Drift across sections feeds the steering loop. Cold-start probes legibility;
+bootstrap contract probes operability. Both are distinct from
+`AGENTS.md` § Session bootstrap (the per-session protocol).
+
+Step 18 grows a closing **Bootstrap contract** verdict that prints per
+condition: `[✓ surface] [✓ ready]` / `[✓ surface] [⚠ placeholder]` /
+`[✗ surface missing]`. A fresh scaffold satisfies all surfaces; conditions 1
+and 2 routinely report `placeholder` until the user fills in `dev-setup.md`.
+Surface-missing is a skill bug, surfaced loudly but non-blocking. The verdict
+runs at the end of every `/init-docs` invocation — scaffold, audit, and
+up-to-date no-op alike.
+
+Files self-document; no new ADR. The CHANGELOG entry records the
+introduction; the two files carry their own rationale headers.
+
+**Files touched:** `assets/initialization-checklist.md` (new),
+`assets/cold-start-test.md` (new), `assets/docs-README.md`,
+`assets/harness.md`, `SKILL.md`, `CONTEXT.md`, `CHANGELOG.md`.
+
+**How to apply:**
+
+1. If `docs/processes/initialization-checklist.md` is absent in the
+   target repo, copy it from
+   `~/.claude/skills/init-docs/assets/initialization-checklist.md`.
+   Skip if present.
+
+2. If `docs/processes/cold-start-test.md` is absent in the target
+   repo, copy it from
+   `~/.claude/skills/init-docs/assets/cold-start-test.md`. Skip if
+   present.
+
+3. In the target repo's `docs/README.md` § Processes section, check
+   for entries for the initialization checklist and the cold-start
+   test. If absent, append two new bullets from
+   `~/.claude/skills/init-docs/assets/docs-README.md`:
+   - `- [Initialization checklist](processes/initialization-checklist.md) — the bootstrap contract; four conditions every operable repo must satisfy \`#ai-harness\` \`#guideline\``
+   - `- [Cold-start test](processes/cold-start-test.md) — quarterly legibility ritual; five questions answered from repo content alone \`#ai-harness\` \`#guideline\``
+   Skip each individually if already present. **Stop with conflict
+   report** if `## Processes` is renamed or missing.
+
+4. In the target repo's `docs/processes/harness.md` § Steering loop
+   section, check for a "cold-start log" reference. If absent,
+   insert the paragraph from
+   `~/.claude/skills/init-docs/assets/harness.md` immediately after
+   the `## Failing` scan paragraph and before the `---` separator
+   that precedes "What the harness contains today". Skip if a
+   paragraph already references the cold-start test by name.
+   **Stop with conflict report** if `## Steering loop` is renamed
+   or missing, or if the `## Failing` scan paragraph is not
+   detectable.
+
+5. **No mechanical change to Step 18 in target repos** — the
+   Bootstrap-contract closing verdict is rendered by the agent
+   running `/init-docs`, not by any file in the target repo. The
+   logic lives in this skill's `SKILL.md`; consuming repos do not
+   need to track it. The audit step has nothing to write here.
+
+**Stack-specific notes:** None. Both files are stack-agnostic. The
+bootstrap contract resolves to existing artifacts (`dev-setup.md`
+sections, `FEATURES.md`, `exec-plans/active/`, `tech-debt-tracker.md`)
+that the skill already scaffolds; the cold-start ritual is
+human-initiated and document-only (no slash command, no automation).
+The rolling log at `docs/generated/cold-start-test.md` is created on
+first run by whoever runs the test, not pre-created by this skill —
+this preserves `docs/generated/`'s "machine-generated artifacts only,
+created when generated" invariant.
+
+**Additive/replacing:** additive — two new files, two new catalog
+entries, one new steering-loop paragraph, and a new closing section in
+this skill's SKILL.md Step 18 (which does not propagate to target
+repos).
+
+**Conflict risk:** low. Surfaces: a target repo that has renamed
+`## Processes` (docs/README.md), `## Steering loop`
+(harness.md), or removed the `## Failing` scan paragraph. In any such
+case the audit agent should pause and ask rather than insert blindly.
+
+---
+
 ## 2026-05-26 — Harness structure validator and doc garbage collector
 
 **What:** Ships two stdlib-Python validators from the init-docs skill,

@@ -83,6 +83,8 @@ and directory the skill would write:
 - Templates: `docs/analysis/_template.md`, `docs/exec-plans/_template.md`.
 - Seeded docs: `docs/processes/harness.md`, `docs/processes/dev-setup.md`,
   `docs/processes/model-policy.md`,
+  `docs/processes/initialization-checklist.md`,
+  `docs/processes/cold-start-test.md`,
   `docs/decisions/001-harness-design.md`,
   `docs/decisions/002-session-exit.md`,
   `docs/decisions/003-evaluator-gate.md`,
@@ -253,6 +255,21 @@ their output directory will destroy the rest of the harness.
 Copy `assets/tech-debt-tracker.md` to `docs/tech-debt-tracker.md`.
 Empty ledger with the severity + status legend. New entries go at the
 top of the relevant section.
+
+## Step 11a — Write the initialization checklist
+
+Copy `assets/initialization-checklist.md` to
+`docs/processes/initialization-checklist.md`. No placeholders.
+Documents the bootstrap-contract property that Step 18 verifies as
+its closing section.
+
+## Step 11b — Write the cold-start test
+
+Copy `assets/cold-start-test.md` to
+`docs/processes/cold-start-test.md`. No placeholders. Documents the
+quarterly legibility ritual; output lands in
+`docs/generated/cold-start-test.md` (rolling log, created on first
+run — not pre-created by the skill).
 
 ## Step 12 — Write the feature ledger
 
@@ -562,7 +579,8 @@ autonomously, never silently skip steps.
 
 ## Step 18 — Report what was created
 
-List every file and directory created or skipped. Use four sections:
+List every file and directory created or skipped. Use four sections,
+plus a closing **Bootstrap contract** verdict:
 
 - **Created** — new files, with paths. Include `.harness-version`
   with its value. Note `docs/FEATURES.md` as an empty ledger by design
@@ -574,8 +592,10 @@ List every file and directory created or skipped. Use four sections:
   `docs/decisions/005-hard-constraints.md`, ADR 006 at
   `docs/decisions/006-pre-approval-critic-gate.md`, ADR 007 at
   `docs/decisions/007-harness-validators.md`, the fleet model
-  policy at `docs/processes/model-policy.md`, and the three harness
-  validators at `scripts/harness/`.
+  policy at `docs/processes/model-policy.md`, the initialization
+  checklist at `docs/processes/initialization-checklist.md`, the
+  cold-start test at `docs/processes/cold-start-test.md`, and the
+  three harness validators at `scripts/harness/`.
 - **Skipped (already existed)** — existing files not touched.
 - **Needs filling** — files written with placeholder content the user
   must resolve. At minimum: `ARCHITECTURE.md`, `SECURITY.md`,
@@ -590,9 +610,52 @@ List every file and directory created or skipped. Use four sections:
   and a pre-existing file would have been updated. Show the exact
   content to merge.
 
-For audit-mode runs, replace the four sections with a single summary:
-which entries applied, which conflicted (if any), and the new marker
-value.
+### Bootstrap contract (closing verdict)
+
+After the four sections above, print a Bootstrap-contract verdict
+per [`docs/processes/initialization-checklist.md`](this file's
+runtime path in the target repo). Verify each of the four conditions
+and emit one line per condition. Two-level pass:
+
+- **`[✓ surface] [✓ ready]`** — artifact exists and carries
+  non-placeholder content.
+- **`[✓ surface] [⚠ placeholder]`** — artifact exists but contains
+  scaffold-default markers (`*Fill in:*`, `<command>`,
+  `{{PLACEHOLDER}}`). Not a skill bug; the user has not yet filled
+  in stack-specific commands.
+- **`[✗ surface missing]`** — artifact does not exist where the
+  contract says it should. *This is a skill bug.* Print loudly. Do
+  NOT block exit; the user has on-disk files worth keeping.
+
+Verification rules per condition:
+
+| # | Condition | Surface check | Populated check |
+|---|---|---|---|
+| 1 | Can start | `docs/processes/dev-setup.md` exists; `## Common commands` and `## Running locally` headings exist | The Build and Run-locally table cells are not `<command>`; the § Running locally body contains no `*Fill in:*` |
+| 2 | Can test | `docs/processes/dev-setup.md` exists; `## Common commands` and `## Feature verification convention` headings exist | The Run-tests table cell is not `<command>`; § Feature verification convention body contains no `*Fill in:*` |
+| 3 | Can see progress | `docs/FEATURES.md` + `docs/exec-plans/active/` (folder) + `docs/README.md` exist; `FEATURES.md` carries `## Not started`, `## Active`, `## Blocked`, `## Failing`, `## Passing` headings | n/a — empty is legitimate; no placeholder state |
+| 4 | Can pick up next steps | `docs/FEATURES.md`, `docs/exec-plans/active/`, `docs/tech-debt-tracker.md` exist and are readable | n/a — empty is legitimate; no placeholder state |
+
+Example output (fresh scaffold):
+
+    Bootstrap contract:
+      [✓ surface] [⚠ placeholder] can start         → dev-setup.md § Common commands (Build, Run locally)
+      [✓ surface] [⚠ placeholder] can test          → dev-setup.md § Common commands (Run tests) + Feature verification convention
+      [✓ surface] [✓ ready]       can see progress  → FEATURES.md + exec-plans/active/ + docs/README.md
+      [✓ surface] [✓ ready]       can pick up next  → FEATURES.md § Active|Failing + exec-plans/active/ + tech-debt-tracker.md
+
+    Initialization complete. 2 placeholders to fill before this repo is operable:
+      - dev-setup.md § Common commands
+      - dev-setup.md § Feature verification convention
+
+The verdict runs at the end of fresh scaffold, audit-mode runs
+(after the marker advances), and up-to-date no-op runs. It is the
+point — the verdict tells the agent whether the bootstrap contract is
+satisfied right now, not whether anything changed.
+
+For audit-mode runs, replace the four sections above with a single
+summary (which entries applied, which conflicted, the new marker
+value), then print the Bootstrap-contract verdict.
 
 If tags were inferred from the project (Step 2), briefly explain the
 signals used so the user can correct wrong inferences.
