@@ -22,25 +22,27 @@ placeholders that the user fills after scaffolding.
 The skill is versioned: `CHANGELOG.md` in this directory is the source
 of truth for changes to assets and SKILL.md. Each scaffolded repo
 records the applied version in `.harness-version` at its root (single-
-line ISO date). Running the skill on a stale repo applies pending
-changelog entries.
+line changelog heading key, e.g. `2026-05-27.002`). Running the skill
+on a stale repo applies pending changelog entries.
 
 ## How to update this skill
 
 Every change to files under `assets/` or to `SKILL.md` MUST be
-accompanied by a new entry in `CHANGELOG.md` dated today. The
-git pre-commit hook (`.githooks/pre-commit`) enforces this.
+accompanied by a new entry in `CHANGELOG.md` with a heading key dated
+today. The git pre-commit hook (`.githooks/pre-commit`) enforces this.
 
 Ritual:
 
 1. Edit the asset(s) or SKILL.md.
-2. Add a `## YYYY-MM-DD — <feature name>` entry in `CHANGELOG.md`
+2. Add a `## YYYY-MM-DD.NNN — <feature name>` entry in `CHANGELOG.md`
    following the entry shape documented at the top of that file.
+   `NNN` is the same-day sequence number; use the next unused number
+   for that date.
    The "How to apply" block must be **stack-neutral** and
    **idempotent** (check-then-act). Quarantine stack-specific
    material to the optional "Stack-specific notes" block.
 3. Test with a retrofitted repo: pick one scaffolded repo whose
-   `.harness-version` is older than the new entry, run the skill,
+   `.harness-version` is behind the new entry, run the skill,
    verify the entry applies idempotently and advances the marker.
 4. Commit. The pre-commit hook refuses if step 2 is missing.
 
@@ -62,9 +64,9 @@ repo's state:
 
 | State | Mode | Action |
 |---|---|---|
-| No `docs/`, no `.harness-version`, no conflicts | **Scaffold** | Steps 1–16 below; final step writes `.harness-version` to changelog head date |
-| `.harness-version` present and < changelog head | **Audit** | Skip scaffold; run the audit procedure (see "Audit mode" below) |
-| `.harness-version` present and = changelog head | **Up-to-date** | No-op; report "harness version <date> is current" |
+| No `docs/`, no `.harness-version`, no conflicts | **Scaffold** | Steps 1–16 below; final step writes `.harness-version` to the changelog head key |
+| `.harness-version` present and behind changelog head | **Audit** | Skip scaffold; run the audit procedure (see "Audit mode" below) |
+| `.harness-version` present and = changelog head key | **Up-to-date** | No-op; report "harness version <key> is current" |
 | No `.harness-version` but `docs/` exists from a prior scaffold | **Upgrade + audit** | Run Step 1 (upgrade path, fill missing files), set `.harness-version` to the pre-changelog sentinel `2026-04-19`, then audit |
 | Custom / conflicting layout | **Custom** | Step 1's "Anything else exists" branch; prompt skip/overwrite/abort |
 
@@ -106,9 +108,9 @@ and directory the skill would write:
 
 First, read `.harness-version` at the repo root if it exists. This
 determines the mode (see "Modes of operation" above). If the marker
-equals the changelog head date, stop and report "up to date." If the
-marker is older, skip to the "Audit mode" section — the scaffold
-steps below do not apply.
+equals the changelog head key, stop and report "up to date." If the
+marker is behind the head in changelog file order, skip to the "Audit
+mode" section — the scaffold steps below do not apply.
 
 If `.harness-version` is absent, proceed with the remaining cases:
 
@@ -127,7 +129,7 @@ If `.harness-version` is absent, proceed with the remaining cases:
     16 report that the user can migrate manually).
   - **Overwrite** — replace everything (destructive — confirm
     explicitly). After overwrite, write `.harness-version` = changelog
-    head date (the repo is now current).
+    head key (the repo is now current).
   - **Abort**.
 - **Anything else exists** — custom layout: list conflicts and ask
   skip / overwrite / abort.
@@ -510,10 +512,10 @@ Flag in the Step 18 report: "Harness validators installed at
 ## Step 17 — Write `.harness-version`
 
 Write a single line to `.harness-version` at the repo root. The value
-is the date of the most recent entry in this skill's `CHANGELOG.md`
-(the "changelog head date"). Do **not** use today's date — a scaffold
-done after the changelog head would otherwise claim to be newer than
-any entry and mask pending work if new entries are added later.
+is the heading key of the first entry in this skill's `CHANGELOG.md`
+(the "changelog head key", e.g. `2026-05-27.002`). Do **not** use
+today's date by itself — a date-only marker cannot distinguish
+multiple same-day entries.
 
 For upgrade-mode runs (the "Older init-docs output" branch of Step 1),
 write the pre-changelog sentinel `2026-04-19` instead, so the
@@ -522,12 +524,20 @@ subsequent audit picks up every changelog entry.
 ## Audit mode procedure
 
 This runs in place of the scaffold when `.harness-version` is present
-and older than the changelog head.
+and behind the changelog head.
 
 1. Read `.harness-version` (the repo marker).
-2. Read this skill's `CHANGELOG.md`. Enumerate entries whose heading
-   date is strictly greater than the marker. Process them oldest-
-   first (bottom-up in the file).
+2. Read this skill's `CHANGELOG.md`. Entries are ordered newest-first
+   by file position. If the marker is a legacy date-only value
+   (`YYYY-MM-DD`), resolve it to the last entry that old date-only
+   version could have meant. For the migration date specifically,
+   `2026-05-27` resolves to `2026-05-27.001`, so the
+   `2026-05-27.002` cursor-migration entry remains pending. For other
+   dates, resolve to the newest entry in the historical same-date block
+   (for example, `2026-05-25` resolves to `2026-05-25.004`). If no
+   entry matches, treat the marker as older than all entries. Enumerate
+   entries above the resolved marker. Process them oldest-first
+   (bottom-up in the pending slice).
 3. For each pending entry, in order:
    a. Print the entry's heading and the "What" summary so the user
       sees what is about to be applied.
@@ -545,13 +555,13 @@ and older than the changelog head.
       the expected content is present. If verification fails, stop;
       do not advance the marker.
    f. Once *all* steps for an entry pass verification, update
-      `.harness-version` to that entry's date. This is incremental —
+      `.harness-version` to that entry's heading key. This is incremental —
       one entry at a time, persisted immediately. A later failure
       does not roll back earlier successes.
 4. When all pending entries are applied, report: "harness version
    advanced from <old> to <new>; N entries applied." If any entry
    failed or conflicted, report which one and leave the marker at
-   the last successful entry's date.
+   the last successful entry's heading key.
 
 5. **Hard-constraint citation check (warn-only).** After step 4,
    re-read the target repo's `AGENTS.md` § Hard constraints (MUST /

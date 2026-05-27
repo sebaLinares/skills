@@ -2,8 +2,8 @@
 #
 # pre-commit hook for the init-docs skill.
 # Refuses commits that touch assets/ or SKILL.md unless CHANGELOG.md
-# is also staged with an entry dated today. Keeps the changelog in
-# sync with asset edits — the mechanism that repos rely on for
+# is also staged with a heading key dated today. Keeps the changelog
+# in sync with asset edits — the mechanism that repos rely on for
 # upgrade audits.
 #
 # Bypass: SKILL_CHANGELOG_BYPASS="<reason>" git commit ...
@@ -11,12 +11,17 @@
 
 set -e
 
+HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SKILL_DIR=$(cd "$HOOK_DIR/.." && pwd)
+SKILL_PREFIX=$(git -C "$SKILL_DIR" rev-parse --show-prefix)
+INDEX_CHANGELOG="${SKILL_PREFIX}CHANGELOG.md"
+
 if [ -n "${SKILL_CHANGELOG_BYPASS:-}" ]; then
   echo "→ changelog-sync: BYPASSED — reason: $SKILL_CHANGELOG_BYPASS" >&2
   exit 0
 fi
 
-TOUCHED=$(git diff --cached --name-only --diff-filter=ACM \
+TOUCHED=$(git -C "$SKILL_DIR" diff --cached --relative --name-only --diff-filter=ACM \
   | grep -E '^(assets/|SKILL\.md$)' \
   || true)
 
@@ -28,14 +33,14 @@ echo "→ pre-commit: checking changelog sync"
 echo "  touched:"
 echo "$TOUCHED" | sed 's/^/    /'
 
-CHANGELOG_STAGED=$(git diff --cached --name-only --diff-filter=ACM \
+CHANGELOG_STAGED=$(git -C "$SKILL_DIR" diff --cached --relative --name-only --diff-filter=ACM \
   | grep -E '^CHANGELOG\.md$' \
   || true)
 
 if [ -z "$CHANGELOG_STAGED" ]; then
   {
     echo "✗ changelog-sync: asset or SKILL.md changes staged without CHANGELOG.md"
-    echo "  expected: a staged entry in CHANGELOG.md dated $(date +%Y-%m-%d)"
+    echo "  expected: a staged entry in CHANGELOG.md keyed $(date +%Y-%m-%d).NNN"
     echo "  bypass:   SKILL_CHANGELOG_BYPASS=\"<reason>\" git commit ..."
     echo "  see:      SKILL.md → \"How to update this skill\""
   } >&2
@@ -43,11 +48,36 @@ if [ -z "$CHANGELOG_STAGED" ]; then
 fi
 
 TODAY=$(date +%Y-%m-%d)
-if ! git diff --cached CHANGELOG.md | grep -qE "^\+## $TODAY"; then
+if ! git -C "$SKILL_DIR" diff --cached --relative CHANGELOG.md | grep -qE "^\+## $TODAY\.[0-9]{3} — .+"; then
   {
-    echo "✗ changelog-sync: CHANGELOG.md staged but no entry dated $TODAY added"
-    echo "  expected: a new \"## $TODAY — <feature name>\" heading in the staged diff"
+    echo "✗ changelog-sync: CHANGELOG.md staged but no entry keyed $TODAY.NNN added"
+    echo "  expected: a new \"## $TODAY.NNN — <feature name>\" heading in the staged diff"
     echo "  bypass:   SKILL_CHANGELOG_BYPASS=\"<reason>\" git commit ..."
+  } >&2
+  exit 1
+fi
+
+DATE_ONLY_HEADINGS=$(git -C "$SKILL_DIR" show ":$INDEX_CHANGELOG" \
+  | grep -E '^## [0-9]{4}-[0-9]{2}-[0-9]{2} — ' \
+  || true)
+
+if [ -n "$DATE_ONLY_HEADINGS" ]; then
+  {
+    echo "✗ changelog-sync: date-only changelog heading found"
+    echo "  expected: ## YYYY-MM-DD.NNN — <feature name>"
+    echo "$DATE_ONLY_HEADINGS" | sed 's/^/    /'
+  } >&2
+  exit 1
+fi
+
+DUPLICATE_KEYS=$(git -C "$SKILL_DIR" show ":$INDEX_CHANGELOG" \
+  | awk '/^## [0-9]{4}-[0-9]{2}-[0-9]{2}\.[0-9]{3} / { count[$2]++ } END { for (key in count) if (count[key] > 1) print key }' \
+  | sort)
+
+if [ -n "$DUPLICATE_KEYS" ]; then
+  {
+    echo "✗ changelog-sync: duplicate changelog heading key"
+    echo "$DUPLICATE_KEYS" | sed 's/^/    /'
   } >&2
   exit 1
 fi

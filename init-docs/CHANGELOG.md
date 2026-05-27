@@ -5,8 +5,9 @@ here. The git pre-commit hook enforces this. See SKILL.md →
 "How to update this skill" for the ritual.
 
 Entries are ordered newest-first. Each entry's heading is
-`## YYYY-MM-DD — <feature name>`. The date is the ordering key; the
-feature name is the primary identifier.
+`## YYYY-MM-DD.NNN — <feature name>`. The heading key
+(`YYYY-MM-DD.NNN`) is the migration cursor; file order is the ordering
+source. The date is human context, and `NNN` is a same-day sequence.
 
 An entry's "How to apply" instructions must be **stack-neutral**
 (describe contracts, not implementations) and **idempotent**
@@ -15,12 +16,34 @@ quarantined to the optional "Stack-specific notes" block and cited as
 example-only.
 
 Repos declare their applied version in `.harness-version` at the repo
-root. Audit applies entries with date > marker, advancing the marker
-one entry at a time.
+root. Audit applies entries above the marker in file order, advancing
+the marker one entry at a time.
 
 ---
 
-## 2026-05-31 — Critic hook payload fix and 2-round iteration cap
+## 2026-05-27.002 — Changelog cursor keys replace date-only harness versioning
+
+**What:** The harness version cursor is now the changelog heading key,
+not the date alone. Changelog headings use `YYYY-MM-DD.NNN`, where
+`NNN` distinguishes multiple same-day entries. Audit determines pending
+entries by file order above the stored marker, so future-dated entries
+and same-day features no longer require fake dates. The pre-commit
+hook now resolves paths from the skill directory before checking staged
+files, so it works when the skill lives in a larger skills repo.
+
+**Why:** Date-only markers collapse multiple same-day features into one
+version. The previous workaround — writing tomorrow's date — was easy
+for agents to miss and already left future-dated history in this file.
+
+**Files touched:** `CHANGELOG.md`, `SKILL.md`, `.githooks/pre-commit`.
+
+**How to apply:**
+
+1. **No target repo file changes.** This entry changes the init-docs
+   skill's versioning convention and pre-commit guard only. Once read,
+   advance `.harness-version` to `2026-05-27.002`.
+
+## 2026-05-31.001 — Critic hook payload fix and 2-round iteration cap
 
 **What:** `harness-planner-critic-hook.mjs` now reads the SubagentStop
 agent identity from both `ctx.agent_type` (Claude Code's documented
@@ -104,7 +127,7 @@ amended to check both; out of scope for this entry.
 
 ---
 
-## 2026-05-30 — ADR slugs as the canonical identifier (replacing)
+## 2026-05-30.001 — ADR slugs as the canonical identifier (replacing)
 
 **What:** ADR identity becomes slug-only across filenames, URLs, and
 prose. Filenames are `docs/decisions/<slug>.md` — the leading `NNN-`
@@ -217,7 +240,7 @@ CI) is unchanged.
 
 ---
 
-## 2026-05-29 — Fix self-referential false positive in absolute-path scanner
+## 2026-05-29.001 — Fix self-referential false positive in absolute-path scanner
 
 **What:** `check_harness_structure.py` now excludes `_canonical_manifest.py`
 from text scans, in addition to itself. The manifest contains the
@@ -233,7 +256,7 @@ with the updated asset. No structural changes to the repo;
 
 ---
 
-## 2026-05-28 — ADR identity by slug, not number
+## 2026-05-28.001 — ADR identity by slug, not number
 
 **What:** ADRs are now identified by their `id:` frontmatter slug
 (kebab-case, unique within `docs/decisions/`), not by filename number.
@@ -380,7 +403,7 @@ not a recurring gate, and does not belong in the standing CI loop.
 
 ---
 
-## 2026-05-27 — Cold-start test and initialization checklist as scaffolded artifacts
+## 2026-05-27.001 — Cold-start test and initialization checklist as scaffolded artifacts
 
 **What:** Ships two new process documents and a closing Bootstrap-contract
 verdict in `/init-docs` Step 18. `docs/processes/initialization-checklist.md`
@@ -471,7 +494,7 @@ case the audit agent should pause and ask rather than insert blindly.
 
 ---
 
-## 2026-05-26 — Harness structure validator and doc garbage collector
+## 2026-05-26.001 — Harness structure validator and doc garbage collector
 
 **What:** Ships two stdlib-Python validators from the init-docs skill,
 installed at `scripts/harness/` in every scaffolded repo:
@@ -585,8 +608,8 @@ worker/checker split.
    needs-filling items (frontmatter still on `{{REPO_NAME}}`, etc.)
    and continue. Then run
    `python3 scripts/harness/check_harness_structure.py` (no flag).
-   If exit 0, advance `.harness-version` to `2026-05-26`. If exit 1,
-   leave the marker at the previous entry's date and report which
+   If exit 0, advance `.harness-version` to `2026-05-26.001`. If exit 1,
+   leave the marker at the previous entry's key and report which
    check failed.
 
 **Stack-specific notes:** No Makefile / pre-commit / CI wiring ships.
@@ -620,7 +643,7 @@ on real-run exit 0.
 
 ---
 
-## 2026-05-25 — Codex slash commands replaced with script-invocation forms; Evaluator focus reframed
+## 2026-05-25.004 — Codex slash commands replaced with script-invocation forms; Evaluator focus reframed
 
 **What:** The codex-plugin-cc slash commands (`/codex:review`,
 `/codex:adversarial-review`, `/codex:result`, etc.) set
@@ -800,7 +823,7 @@ missing or renamed neighbouring headings.
 
 ---
 
-## 2026-05-25 — Pre-approval critic gate (ADR 006); complexity threshold removed
+## 2026-05-25.003 — Pre-approval critic gate (ADR 006); complexity threshold removed
 
 **What:** Collapses the simple/complex ExecPlan threshold. Every plan now
 flows through the `harness-planner` Opus 4.7 xhigh subagent and through the
@@ -1007,7 +1030,7 @@ to ADRs without a superseding ADR.
 
 ---
 
-## 2026-05-25 — Covers: in-execution gate, citation discipline, reorder safety
+## 2026-05-25.002 — Covers: in-execution gate, citation discipline, reorder safety
 
 **What:** Addresses the three negative consequences ADR 005 names —
 constraints-block maintenance rot, the in-execution `covers:` gap, and
@@ -1129,7 +1152,7 @@ audits after this entry applies.
 
 ---
 
-## 2026-05-25 — Auto-critic SubagentStop hook for harness-planner
+## 2026-05-25.001 — Auto-critic SubagentStop hook for harness-planner
 
 **What:** Closes the model-policy step 16 hole. The codex plugin's
 `/codex:adversarial-review` slash command sets
@@ -1220,7 +1243,7 @@ critic paragraph. No edit outside `.claude/`, `docs/processes/`, and
 
 ---
 
-## 2026-05-24 — Typed design subagents (harness-analyst, harness-planner) with pre-write gates
+## 2026-05-24.001 — Typed design subagents (harness-analyst, harness-planner) with pre-write gates
 
 **What:** Ships two project-level subagent configs under `.claude/agents/`
 — `harness-analyst` (Phase 2 analysis synthesis) and `harness-planner`
@@ -1352,7 +1375,7 @@ renamed.
 
 ---
 
-## 2026-05-22 — Hard constraints (MUST / MUST NOT) block in AGENTS.md
+## 2026-05-22.001 — Hard constraints (MUST / MUST NOT) block in AGENTS.md
 
 **What:** Introduces a new top-level section in `AGENTS.md` titled
 `## Hard constraints (MUST / MUST NOT)`, placed immediately after
@@ -1444,7 +1467,7 @@ the next free number and rewrite cross-references.
 
 ---
 
-## 2026-05-21 — Fleet model policy
+## 2026-05-21.001 — Fleet model policy
 
 **What:** Encodes fleet-wide per-step model assignments as
 non-negotiable contracts: Sonnet 4.6 high as default orchestrator,
@@ -1564,7 +1587,7 @@ skip and flag.
 
 ---
 
-## 2026-05-20 — Evaluator gate at plan completion
+## 2026-05-20.001 — Evaluator gate at plan completion
 
 **What:** Adds an independent **Evaluator** pass as the gate between
 `docs/exec-plans/active/` and `docs/exec-plans/completed/`. The
@@ -1649,7 +1672,7 @@ should pause and ask rather than insert blindly.
 
 ---
 
-## 2026-05-19 — Session exit checklist
+## 2026-05-19.001 — Session exit checklist
 
 **What:** Adds Session exit as the explicit clock-out half of session
 bootstrap. The new checklist has six dimensions: build, verifier, plan
@@ -1702,7 +1725,7 @@ rather than insert blindly.
 
 ---
 
-## 2026-05-18 — Feature ledger as first-class artifact
+## 2026-05-18.001 — Feature ledger as first-class artifact
 
 **What:** Adds `docs/FEATURES.md` as the repo-wide scope surface — every
 user-observable capability paired with a verification reference and one
@@ -1818,7 +1841,7 @@ rather than insert blindly.
 
 ---
 
-## 2026-05-05 — Auto-commit after plan execution via `/commit` skill
+## 2026-05-05.001 — Auto-commit after plan execution via `/commit` skill
 
 **What:** After the agent closes the plan (moves to `completed/`, sets
 `status: completed`), it commits automatically instead of asking the developer.
@@ -1857,7 +1880,7 @@ and one clause in the Phase gates paragraph of AGENTS.md.
 
 ---
 
-## 2026-04-30 — Replace open questions with assumptions + cross-team unknowns
+## 2026-04-30.001 — Replace open questions with assumptions + cross-team unknowns
 
 **What:** Removes `## 6. Open questions` from the analysis template. The
 section conflated three classes of unknowns only one of which requires user
@@ -1895,7 +1918,7 @@ analysis template and one bullet in CLAUDE.md.
 
 ---
 
-## 2026-04-22 — Sensor checks completed/ not active/; agent closes plan before developer commits
+## 2026-04-22.002 — Sensor checks completed/ not active/; agent closes plan before developer commits
 
 **What:** Flips the plan-coverage sensor from checking `active/` (approved
 plans) to checking `completed/` (completed plans). The agent moves the
@@ -1940,7 +1963,7 @@ change; the rest are doc updates.
 
 ---
 
-## 2026-04-22 — PR-per-plan deferred; plan closes on step completion
+## 2026-04-22.001 — PR-per-plan deferred; plan closes on step completion
 
 **What:** Removes the PR-and-merge requirement from phase 6. Plans now
 close (move to `completed/`) when all steps are checked off and tests
@@ -1985,7 +2008,7 @@ bullet addition.
 
 ---
 
-## 2026-04-20 — Plan-coverage sensor docs
+## 2026-04-20.001 — Plan-coverage sensor docs
 
 **What:** Adds a *plan-coverage sensor* concept to the harness: a
 pre-commit check that refuses to commit source files not declared
