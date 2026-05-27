@@ -6,8 +6,8 @@
  * and writes the verdict into the plan's "## Pre-approval critic
  * transcript" section. See ADR pre-approval-critic-gate.
  *
- * Triggered only when subagent_type === "harness-planner". All other
- * subagents are silently passed through (exit 0).
+ * Triggered only when agent_type/subagent_type === "harness-planner".
+ * All other subagents are passed through (exit 0).
  *
  * Blocks the agent turn for the duration of the critic run (typically
  * 30-90s on a non-trivial plan; hard-capped at TIMEOUT_MS). The pause
@@ -50,6 +50,15 @@ function readCtx() {
   } catch (_) { return {}; }
 }
 
+function maybeDumpUnmatched(ctx) {
+  try {
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const out = `/tmp/harness-hook-no-match-${ts}.json`;
+    fs.writeFileSync(out, JSON.stringify(ctx, null, 2));
+    process.stderr.write(`harness-planner-critic-hook: payload dumped to ${out}\n`);
+  } catch (_) { /* never throw from a hook */ }
+}
+
 function findCompanion() {
   const root = path.join(os.homedir(), '.claude', 'plugins');
   if (!fs.existsSync(root)) return null;
@@ -88,6 +97,19 @@ function countRuns(sectionBody) {
   return matches.length;
 }
 
+function criticSectionBody(planPath) {
+  const original = fs.readFileSync(planPath, 'utf-8');
+  const lines = original.split('\n');
+  const startIdx = lines.findIndex((l) => l.trim() === SECTION_HEADING);
+  if (startIdx === -1) return '';
+
+  let endIdx = lines.length;
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    if (lines[i].startsWith('## ')) { endIdx = i; break; }
+  }
+  return lines.slice(startIdx + 1, endIdx).join('\n');
+}
+
 function indent(body, spaces) {
   const pad = ' '.repeat(spaces);
   return body.split('\n').map((l) => l ? pad + l : l).join('\n');
@@ -97,15 +119,33 @@ function formatRun(n, stamp, body) {
   return `**Run ${n} — ${stamp} — ${CRITIC_CMD}**\n\n${body.trim()}\n`;
 }
 
-function writeRun(planPath, verdictBody) {
-  const stamp = utcStamp();
+function formatCapReached(n, stamp) {
+  return `**Run ${n} — ${stamp} — cap-reached**\n\n` +
+    `CAP_REACHED: Pre-approval critic has already run twice on this plan\n` +
+    `(see ADR pre-approval-critic-gate § Iteration cap). The lead must\n` +
+    `choose one of:\n\n` +
+    `1. **Ship with residuals.** Append the unresolved findings to the\n` +
+    `   plan's Decision Log as accepted residuals, with rationale.\n` +
+    `   Approve the plan and proceed.\n` +
+    `2. **Scope-split.** Identify the milestone(s) that can ship now vs.\n` +
+    `   defer. Create a new ExecPlan for the shipping slice; the deferred\n` +
+    `   work returns to Phase 2 for a fresh analysis.\n` +
+    `3. **Escalate to re-analysis.** The critic surfaced an unresolved\n` +
+    `   design question. Halt Phase 5, write or amend the analysis doc,\n` +
+    `   settle the question, then re-dispatch harness-planner under a\n` +
+    `   reset scope.\n\n` +
+    `To override (genuinely new scope, not iteration of the same scope),\n` +
+    `re-dispatch harness-planner with HARNESS_CRITIC_FORCE="<reason>" set\n` +
+    `in the env. The reason is logged in this section.\n`;
+}
+
+function appendRunBlock(planPath, block) {
   const original = fs.readFileSync(planPath, 'utf-8');
   const lines = original.split('\n');
   const startIdx = lines.findIndex((l) => l.trim() === SECTION_HEADING);
 
   let updated;
   if (startIdx === -1) {
-    const block = formatRun(1, stamp, verdictBody);
     const trimmed = original.replace(/\s+$/, '');
     updated = `${trimmed}\n\n${SECTION_HEADING}\n\n${block}\n`;
   } else {
@@ -114,8 +154,6 @@ function writeRun(planPath, verdictBody) {
       if (lines[i].startsWith('## ')) { endIdx = i; break; }
     }
     const sectionBody = lines.slice(startIdx + 1, endIdx).join('\n');
-    const runN = countRuns(sectionBody) + 1;
-    const block = formatRun(runN, stamp, verdictBody);
 
     const cleanedBody = sectionBody.replace(PLACEHOLDER_STUB, '').trim();
     const newBody = cleanedBody
@@ -134,9 +172,25 @@ function writeRun(planPath, verdictBody) {
   fs.renameSync(tmp, planPath);
 }
 
+function writeRun(planPath, verdictBody) {
+  const sectionBody = criticSectionBody(planPath);
+  const runN = countRuns(sectionBody) + 1;
+  appendRunBlock(planPath, formatRun(runN, utcStamp(), verdictBody));
+}
+
+function writeCapReachedBlock(planPath, runN) {
+  appendRunBlock(planPath, formatCapReached(runN, utcStamp()));
+}
+
 function main() {
   const ctx = readCtx();
-  if (ctx.subagent_type !== 'harness-planner') return ok();
+  // Claude Code documents agent_type; subagent_type is retained as a
+  // compatibility fallback. See ADR pre-approval-critic-gate.
+  const identity = ctx.agent_type ?? ctx.subagent_type;
+  if (identity !== 'harness-planner') {
+    maybeDumpUnmatched(ctx);
+    return ok();
+  }
 
   const cwd = ctx.cwd || process.cwd();
   const planPath = newestPlan(cwd);
@@ -145,10 +199,27 @@ function main() {
     return ok();
   }
 
+  const sectionBody = criticSectionBody(planPath);
+  const existingRuns = countRuns(sectionBody);
+  const forceReason = process.env.HARNESS_CRITIC_FORCE;
+  if (existingRuns >= 2 && !forceReason) {
+    writeCapReachedBlock(planPath, existingRuns + 1);
+    process.stderr.write(
+      'harness-planner-critic-hook: 2-round cap reached. ' +
+      'Set HARNESS_CRITIC_FORCE="<reason>" to override.\n'
+    );
+    return ok();
+  }
+  const writeCriticRun = (body) => writeRun(
+    planPath,
+    existingRuns >= 2 && forceReason
+      ? `HARNESS_CRITIC_FORCE: ${forceReason}\n\n${body}`
+      : body
+  );
+
   const companion = findCompanion();
   if (!companion) {
-    writeRun(
-      planPath,
+    writeCriticRun(
       'BLOCKED: codex-plugin-cc not installed on this contributor\'s machine.\n\n' +
       'Install per `docs/processes/dev-setup.md` § Toolchain, or run the critic ' +
       'out-of-band and paste the verdict here before requesting lead approval.'
@@ -171,29 +242,27 @@ function main() {
       { cwd, encoding: 'utf-8', timeout: TIMEOUT_MS, stdio: ['ignore', 'pipe', 'pipe'] }
     );
   } catch (err) {
-    writeRun(planPath, `BLOCKED: hook failed to spawn codex-companion — ${err.message || String(err)}.`);
+    writeCriticRun(`BLOCKED: hook failed to spawn codex-companion — ${err.message || String(err)}.`);
     return ok();
   }
 
   if (result.error) {
     const code = result.error.code || 'unknown';
     if (code === 'ETIMEDOUT') {
-      writeRun(
-        planPath,
+      writeCriticRun(
         `BLOCKED: codex adversarial-review timed out after ${TIMEOUT_MS / 1000}s.\n\n` +
         'Run the critic out-of-band and paste the verdict here, or shrink the plan ' +
         'and re-invoke harness-planner.'
       );
     } else {
-      writeRun(planPath, `BLOCKED: codex adversarial-review spawn error (${code}) — ${result.error.message || ''}`);
+      writeCriticRun(`BLOCKED: codex adversarial-review spawn error (${code}) — ${result.error.message || ''}`);
     }
     return ok();
   }
 
   if (result.status !== 0) {
     const stderrTail = (result.stderr || '').trim().slice(-500) || '(no stderr)';
-    writeRun(
-      planPath,
+    writeCriticRun(
       `BLOCKED: codex adversarial-review exited ${result.status}.\n\n` +
       `Stderr tail:\n\n${indent(stderrTail, 4)}`
     );
@@ -203,8 +272,7 @@ function main() {
   const verdict = (result.stdout || '').trim();
   if (!verdict) {
     const stderrTail = (result.stderr || '').trim().slice(-500) || '(no stderr)';
-    writeRun(
-      planPath,
+    writeCriticRun(
       'BLOCKED: codex adversarial-review returned empty stdout. ' +
       'This usually means the codex command is configured for async ' +
       '(--background) output; check codex-plugin-cc installation.\n\n' +
@@ -213,7 +281,7 @@ function main() {
     return ok();
   }
 
-  writeRun(planPath, verdict);
+  writeCriticRun(verdict);
   return ok();
 }
 

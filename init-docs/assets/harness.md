@@ -207,7 +207,13 @@ is unavailable or the critic crashes, the hook writes a
 `BLOCKED: <reason>` placeholder into the same section instead of a
 verdict. The lead does not approve a plan whose critic transcript is
 empty or BLOCKED — install the plugin, run the critic out-of-band,
-or paste a manual verdict before requesting approval. To bypass per
+or paste a manual verdict before requesting approval. The critic runs
+at most twice on the same plan. After Run 2, the hook writes a
+`CAP_REACHED:` block instead of spawning codex; the lead must ship
+with residuals, scope-split, or escalate to re-analysis. See ADR
+pre-approval-critic-gate § Iteration cap. The
+`HARNESS_CRITIC_FORCE="<reason>"` env var overrides the cap; use it
+only for re-dispatch under genuinely new scope. To bypass per
 contributor, remove the SubagentStop entry from
 `.claude/settings.local.json` (the named-section gate still
 applies; manual population is required).

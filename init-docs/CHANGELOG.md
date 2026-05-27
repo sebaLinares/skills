@@ -20,6 +20,90 @@ one entry at a time.
 
 ---
 
+## 2026-05-31 — Critic hook payload fix and 2-round iteration cap
+
+**What:** `harness-planner-critic-hook.mjs` now reads the SubagentStop
+agent identity from both `ctx.agent_type` (Claude Code's documented
+field) and `ctx.subagent_type` (legacy fallback). The hook enforces a
+hard 2-round cap on the pre-approval critic: after Run 2 it writes a
+`CAP_REACHED:` block into the plan's `## Pre-approval critic transcript`
+section instead of spawning codex. Override:
+`HARNESS_CRITIC_FORCE="<reason>"` env var (matches the existing
+`HARNESS_BYPASS` pattern). The hook writes a one-shot stdin payload
+dump to `/tmp/harness-hook-no-match-<ts>.json` only when the identity
+check fails — zero noise on healthy runs; automatic ground truth on
+future schema drift. The iteration cap is recorded as a new
+`§ Iteration cap` subsection of ADR `pre-approval-critic-gate`, with
+short cross-references in `harness.md` Phase 5 and the ExecPlan
+template.
+
+**Why:** A real session of this harness on a downstream repo cost an
+entire $20 Claude subscription window plus ~30% of a 5-hour Codex
+window in roughly one hour. Two structural causes: (1) the hook's
+identity check used `ctx.subagent_type` while Claude Code's documented
+payload is `ctx.agent_type`, so the hook silently no-op'd and the
+orchestrator fell back to manual `--background` Codex invocations that
+cost ~3× the tokens per round; (2) the critic ran five rounds on the
+same plan, each finding new defect categories rather than residuals of
+the same defect, with no doctrine stopping rule. The cap formalizes
+"past two rounds the loop is anti-convergent on average" and names the
+three exit paths (ship-with-residuals / scope-split / re-analysis).
+
+**Files touched:** `assets/harness-planner-critic-hook.mjs`,
+`assets/pre-approval-critic-gate.md`, `assets/harness.md`,
+`assets/exec-plan-template.md`, `CHANGELOG.md`.
+
+**How to apply (replacing — audit halts and asks before applying):**
+
+1. **Replace the critic hook.** Copy
+   `~/.claude/skills/init-docs/assets/harness-planner-critic-hook.mjs`
+   to the target repo's `.claude/hooks/harness-planner-critic-hook.mjs`.
+   Skip if byte-identical.
+
+2. **Update ADR `pre-approval-critic-gate`.** In the target's
+   `docs/decisions/pre-approval-critic-gate.md`, insert the new
+   `**Iteration cap.**` paragraph inside `## Decision`, between
+   `**Approval gate.**` and `**No simple-tier exception.**`, and bump
+   `last_reviewed:` in the frontmatter. Idempotent — skip if the
+   target file already contains the `**Iteration cap.**` literal
+   string. **Stop with conflict report** if the
+   `**Approval gate.**` or `**No simple-tier exception.**` anchors
+   are absent (ADR has drifted from the canonical shape).
+
+3. **Update `harness.md` Phase 5.** In the target's
+   `docs/processes/harness.md`, in the **Pre-approval critic (hard)**
+   paragraph, append the cap sentence (two sentences ending in
+   "use it only for re-dispatch under genuinely new scope") after the
+   `BLOCKED` failure-mode sentence and before the
+   "To bypass per contributor" sentence. Skip if the paragraph
+   already contains `CAP_REACHED:`.
+
+4. **Update the ExecPlan template.** In the target's
+   `docs/exec-plans/_template.md`, in the
+   `## Pre-approval critic transcript` section, append the blockquote
+   note ("Iteration cap...") after the existing explanatory text. Skip
+   if the section already contains `CAP_REACHED`.
+
+5. **Verify wiring.** From the target repo root, run
+   `node --check .claude/hooks/harness-planner-critic-hook.mjs` —
+   expected: silent success. Then send the synthetic stdin payloads
+   from the verification block of this changelog entry's reference
+   plan. The dump file `/tmp/harness-hook-no-match-<ts>.json` should
+   appear only when piping a payload whose `agent_type` is neither
+   `harness-planner` nor `undefined` matching `subagent_type` of the
+   same.
+
+**Stack-specific notes:** None. The hook is Node.js (stdlib only).
+The doctrine changes are markdown-only and stack-agnostic. The env-var
+override (`HARNESS_CRITIC_FORCE`) follows the existing `HARNESS_BYPASS`
+pattern from `verify-covers-hook.sh`; if env-var inheritance through
+Claude Code's hook spawn turns out unreliable in practice on a given
+contributor's machine, fall back to a sentinel file
+(`/tmp/harness-critic-force` containing the reason). The hook can be
+amended to check both; out of scope for this entry.
+
+---
+
 ## 2026-05-30 — ADR slugs as the canonical identifier (replacing)
 
 **What:** ADR identity becomes slug-only across filenames, URLs, and

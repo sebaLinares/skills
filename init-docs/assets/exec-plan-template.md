@@ -112,6 +112,12 @@ section. The critic is auto-fired at the end of Phase 5 — when the
 See [`../PLANS.md`](../PLANS.md) → "The `Pre-approval critic transcript`
 section" for the contract and block shape.
 
+> **Iteration cap.** At most two runs per plan. After Run 2, the
+> hook writes a `CAP_REACHED:` block naming the three exit paths
+> (ship-with-residuals / scope-split / re-analysis). Override:
+> `HARNESS_CRITIC_FORCE="<reason>"`. See ADR
+> pre-approval-critic-gate § Iteration cap.
+
 _No runs yet._
 
 ## Evaluator transcript

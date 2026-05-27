@@ -2,7 +2,7 @@
 id: pre-approval-critic-gate
 owner: {{REPO_NAME}}
 status: accepted
-last_reviewed: 2026-05-28
+last_reviewed: 2026-05-27
 update_trigger: on-supersession
 ---
 
@@ -116,6 +116,35 @@ empty or contains only BLOCKED placeholders. This is a guide-level gate
 enforced by lead discipline, parallel to the Evaluator's completion gate.
 The pre-commit plan-coverage sensor is unchanged; this gate sits earlier in
 the lifecycle.
+
+**Iteration cap.** The pre-approval critic runs at most twice on the
+same plan. After Run 2, the hook refuses to spawn codex and writes a
+`CAP_REACHED:` block into the transcript naming the three exit paths
+the lead must choose between:
+
+1. *Ship with residuals.* Append unresolved findings to the Decision
+   Log as accepted residuals, with rationale.
+2. *Scope-split.* Create a new ExecPlan for the shipping slice; the
+   deferred work returns to Phase 2 for a fresh analysis. The new
+   plan starts a fresh critic counter.
+3. *Escalate to re-analysis.* The critic surfaced an unresolved
+   design question. Halt Phase 5, amend the analysis doc, then
+   re-dispatch harness-planner under reset scope.
+
+The cap exists because a critic that keeps finding *new* defect
+categories on each pass is signalling a scope problem, not a
+convergence opportunity. Each Run+revision pair costs one Opus
+synthesis plus one GPT-5.5 high adversarial-review plus the
+orchestrator's token spend reading both; three rounds is roughly the
+same cost as planning three independent plans. Past two rounds the
+loop is anti-convergent on average.
+
+Override: re-dispatch harness-planner with
+`HARNESS_CRITIC_FORCE="<reason>"` in the env. Use only when the
+re-dispatch carries genuinely new scope (e.g. after a scope-split
+landed and a sibling plan opens), not when the iteration is the same
+scope under a different prompt. The reason is logged in the
+`CAP_REACHED` block for review.
 
 **No simple-tier exception.** Every ExecPlan flows through `harness-planner`
 on Opus 4.7 xhigh and through the critic on GPT-5.5 high via the codex
