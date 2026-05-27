@@ -123,7 +123,7 @@ Wiring contract (intentionally not shipped — fill in for this stack):
 - **Nightly / weekly:** invoke `garbage_collect_docs.py --strict`.
 
 Examples (Makefile, pre-commit, GitHub Actions) live in
-[ADR harness-validators — Harness validators](../decisions/007-harness-validators.md)
+[ADR harness-validators — Harness validators](../decisions/harness-validators.md)
 § Appendix — explicitly marked example-only. Stack-native
 re-implementations (Node, Go, etc.) are acceptable as long as the
 contract documented here is preserved.

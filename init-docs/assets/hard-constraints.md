@@ -4,7 +4,6 @@ owner: {{REPO_NAME}}
 status: accepted
 last_reviewed: 2026-05-28
 update_trigger: on-supersession
-legacy_numbers: []
 ---
 
 # ADR hard-constraints — Hard constraints as a separate category from phase gates

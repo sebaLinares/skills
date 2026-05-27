@@ -1,6 +1,6 @@
 ---
 name: init-docs
-description: Initialize a harness-oriented documentation system for a project. Scaffolds `docs/` subfolders (architecture, analysis, decisions, processes, exec-plans, references, generated, tickets), a master catalog at `docs/README.md`, `docs/PLANS.md` as the ExecPlan spec, templates, a seeded `docs/processes/harness.md` operating manual, ADR 001, `dev-setup.md`, `tech-debt-tracker.md`, and repo-root anchors (`AGENTS.md`, `ARCHITECTURE.md`, `SECURITY.md`) encoding the operating principle, session bootstrap, and phase gates. Use this skill when the user invokes /init-docs, asks to "set up docs", "initialize documentation structure", "scaffold docs", "set up a harness", "add a harness for AI agents", or wants to bootstrap an AI-harness documentation system for a project. Accepts an optional domain description to adapt tag vocabulary; if omitted, scans the project to infer tags automatically.
+description: Initialize a harness-oriented documentation system for a project. Scaffolds `docs/` subfolders (architecture, analysis, decisions, processes, exec-plans, references, generated, tickets), a master catalog at `docs/README.md`, `docs/PLANS.md` as the ExecPlan spec, templates, a seeded `docs/processes/harness.md` operating manual, eight harness ADRs identified by slug, `dev-setup.md`, `tech-debt-tracker.md`, and repo-root anchors (`AGENTS.md`, `ARCHITECTURE.md`, `SECURITY.md`) encoding the operating principle, session bootstrap, and phase gates. Use this skill when the user invokes /init-docs, asks to "set up docs", "initialize documentation structure", "scaffold docs", "set up a harness", "add a harness for AI agents", or wants to bootstrap an AI-harness documentation system for a project. Accepts an optional domain description to adapt tag vocabulary; if omitted, scans the project to infer tags automatically.
 ---
 
 # init-docs
@@ -85,10 +85,10 @@ and directory the skill would write:
   `docs/processes/model-policy.md`,
   `docs/processes/initialization-checklist.md`,
   `docs/processes/cold-start-test.md`,
-  seven harness ADRs in `docs/decisions/` identified by slug:
+  eight harness ADRs in `docs/decisions/` identified by slug:
   `harness-design`, `session-exit`, `evaluator-gate`, `fleet-model-policy`,
-  `hard-constraints`, `pre-approval-critic-gate`, `harness-validators`
-  (filename numbering is per-repo — see Step 13),
+  `hard-constraints`, `pre-approval-critic-gate`, `harness-validators`,
+  `adr-slug-canonical` (filenames are `<slug>.md` — see Step 13),
   `docs/references/README.md`,
   `docs/generated/README.md`.
 - Subagent configs: `.claude/agents/harness-analyst.md`,
@@ -116,7 +116,7 @@ If `.harness-version` is absent, proceed with the remaining cases:
   scaffold steps 2–16.
 - **Older init-docs output** — older `docs/` layout without
   `exec-plans/`, `references/`, `generated/`, `PLANS.md`,
-  `tech-debt-tracker.md`, `harness.md`, or ADR 001, and/or
+  `tech-debt-tracker.md`, `harness.md`, or ADR harness-design, and/or
   pre-existing `CLAUDE.md` without the symlink: treat as an upgrade.
   List what's present, what's missing, and offer:
   - **Upgrade** (default) — add only missing artifacts; do not touch
@@ -278,92 +278,57 @@ must satisfy. Rows are added by the user or the agent during phase 1 of
 the first relevant brief — not during scaffolding. Empty is the correct
 initial state.
 
-## Step 13 — Seed harness ADRs (slug-based, collision-safe)
+## Step 13 — Seed harness ADRs
 
-The harness ships seven ADRs identified by `id:` slug:
+The harness ships eight ADRs identified by `id:` slug. Filenames are
+`<slug>.md` — no numeric prefix. See ADR adr-slug-canonical for the
+convention.
 
-| Slug | Asset filename (canonical numbering) |
+| Slug | Asset filename |
 |---|---|
-| `harness-design` | `assets/001-harness-design.md` |
-| `session-exit` | `assets/002-session-exit.md` |
-| `evaluator-gate` | `assets/003-evaluator-gate.md` |
-| `fleet-model-policy` | `assets/004-fleet-model-policy.md` |
-| `hard-constraints` | `assets/005-hard-constraints.md` |
-| `pre-approval-critic-gate` | `assets/006-pre-approval-critic-gate.md` |
-| `harness-validators` | `assets/007-harness-validators.md` |
+| `harness-design` | `assets/harness-design.md` |
+| `session-exit` | `assets/session-exit.md` |
+| `evaluator-gate` | `assets/evaluator-gate.md` |
+| `fleet-model-policy` | `assets/fleet-model-policy.md` |
+| `hard-constraints` | `assets/hard-constraints.md` |
+| `pre-approval-critic-gate` | `assets/pre-approval-critic-gate.md` |
+| `harness-validators` | `assets/harness-validators.md` |
+| `adr-slug-canonical` | `assets/adr-slug-canonical.md` |
 
-ADRs are referenced inside the harness by slug (`ADR <slug>`), not by
-filename number. The number prefix is a per-repo sort key only.
+### Idempotency rule
 
-### Assignment algorithm (collision-safe)
+For each harness slug, check whether `docs/decisions/<slug>.md` exists
+in the target repo:
 
-1. **Discover existing ADRs.** List every file in the target's
-   `docs/decisions/` matching `<N>-<name>.md`. Parse YAML frontmatter
-   on each; collect `(filename_number, id_slug)` pairs. Track the
-   highest filename number as `next_number = max(existing) + 1` (or
-   `1` if `decisions/` is empty).
+- **Absent:** copy the asset to `docs/decisions/<slug>.md`.
+- **Present with matching `id:`:** skip (idempotent).
+- **Present with different `id:` or otherwise unrelated content:** halt
+  with a conflict report listing the offending slug, the existing file
+  path, and the harness asset that would have been written. Do not
+  proceed until the user resolves the collision.
 
-2. **Enforce slug uniqueness.** Build a set of existing slugs. For
-   each harness slug in the table above, check:
-   - **Slug already present, file content matches harness asset
-     (same `id:`, content unchanged or close enough):** skip
-     (idempotent).
-   - **Slug already present but pointing at a different ADR (different
-     `id:` content or wholly unrelated file):** halt with a conflict
-     report listing the offending slug, the existing file path, and
-     the harness asset that would have been written. Do not proceed
-     until the user resolves the collision (rename their ADR or
-     rename the harness slug locally — the latter is unusual).
-   - **Slug not present:** queue for write.
+No number assignment, no URL rewriting, no `legacy_numbers:` bookkeeping
+— every shipped asset already references peer ADRs by
+`decisions/<slug>.md`, which is the path it lands at.
 
-3. **Assign numbers in slug-table order.** Walk the harness slug
-   table in the order listed. For each queued slug, assign
-   `assigned_number = next_number`, increment `next_number`. Write
-   the file as `docs/decisions/<assigned_number:03d>-<slug>.md`.
+### Placeholder substitution (`harness-design` only)
 
-4. **Record legacy numbers when needed.** If `assigned_number !=
-   <canonical-number>` (i.e., the harness ADR landed at a non-canonical
-   number because of existing ADRs in the target), set
-   `legacy_numbers: [<canonical-number>]` in the written file's
-   frontmatter. This lets `sweep_adr_refs.py` rewrite any pre-existing
-   `ADR <canonical-number>` references in the target repo's older docs
-   to slug form. Users delete the field once their sweep is complete.
+Two placeholders need filling in the `harness-design` ADR:
 
-5. **Placeholder substitution (`harness-design` only).** Two
-   placeholders need filling in the `harness-design` ADR:
+- `{{PROJECT_CONTEXT}}` — one paragraph describing the project: team
+  size, what the repo does, how AI is being used today. If this isn't
+  known from the brief, leave the placeholder verbatim and flag it in
+  the Step 18 report so the user can fill it in.
+- `{{V1_CONTENTS}}` — project-specific list of what ships in v1. The
+  template provides a generic starter list (including `docs/PLANS.md`
+  as item 7 and `AGENTS.md` in item 5). Adjust the language/tooling
+  entry (pre-commit hook) to match the project's stack if detectable
+  from Step 2, otherwise leave the placeholder.
 
-   - `{{PROJECT_CONTEXT}}` — one paragraph describing the project: team
-     size, what the repo does, how AI is being used today. If this
-     isn't known from the brief, leave the placeholder verbatim and
-     flag it in the Step 18 report so the user can fill it in.
-   - `{{V1_CONTENTS}}` — project-specific list of what ships in v1.
-     The template provides a generic starter list (including
-     `docs/PLANS.md` as item 7 and `AGENTS.md` in item 5). Adjust the
-     language/tooling entry (pre-commit hook) to match the project's
-     stack if detectable from Step 2, otherwise leave the placeholder.
-
-   The Fowler/OpenAI guides-vs-sensors mental model, the phase-gate
-   rule, the plan-format reference to `PLANS.md`, the agent-entry-point
-   note about `AGENTS.md` + symlink, and the steering-loop cadence are
-   reusable across any project and stay verbatim.
-
-6. **Cross-reference URL rewrite (only when ADRs were renumbered).**
-   The harness assets contain markdown links like
-   `[ADR harness-design](../decisions/001-harness-design.md)` baked
-   against canonical numbering. If any harness ADR landed at a
-   non-canonical number in step 3, every previously-written harness
-   file that references it must have its URL portion rewritten.
-   Scan the target repo's `docs/`, `.claude/`, and root markdown
-   files for `decisions/<canonical_NNN>-<slug>.md` patterns and
-   rewrite to `decisions/<assigned_NNN>-<slug>.md`. The display text
-   (`ADR <slug>`) is already correct and needs no change.
-
-   Equivalent: after step 3 completes, run
-   `python3 scripts/harness/sweep_adr_refs.py --write` once. The
-   sweep tool reads `id:` + `legacy_numbers:` on every ADR and
-   rewrites both URLs and any stray numeric `ADR NNN` text refs in
-   one pass. This is the recommended path because it also catches
-   user-written docs that referenced the canonical number.
+The Fowler/OpenAI guides-vs-sensors mental model, the phase-gate rule,
+the plan-format reference to `PLANS.md`, the agent-entry-point note
+about `AGENTS.md` + symlink, and the steering-loop cadence are reusable
+across any project and stay verbatim.
 
 ## Step 14 — Write `docs/README.md`
 
@@ -430,7 +395,7 @@ to in Phase 2 (analysis synthesis) and Phase 5 (all ExecPlans) per
 ## Step 16b — Wire the harness-planner critic hook
 
 Every ExecPlan must pass through the pre-approval critic before the
-lead approves it (ADR 006). The `codex:adversarial-review` slash
+lead approves it (ADR pre-approval-critic-gate). The `codex:adversarial-review` slash
 command sets `disable-model-invocation: true` in the codex-plugin-cc
 package, so the orchestrator **cannot** invoke it from inside a turn.
 The hook is the only mechanical path to the critic. The same
@@ -473,7 +438,7 @@ The hook fires only on `subagent_type === "harness-planner"`. It runs
 `codex-companion.mjs adversarial-review` **synchronously** (no
 `--background`), captures stdout, and writes the verdict directly into
 the plan's `## Pre-approval critic transcript` section using
-ADR-006's run-block format. The agent's turn pauses for the duration
+ADR pre-approval-critic-gate's run-block format. The agent's turn pauses for the duration
 of the critic run (typically 30–90s, hard-capped at 10 minutes). On
 any failure mode (plugin missing, codex crash, timeout, non-zero exit,
 empty stdout), the hook writes a `BLOCKED: <reason>` placeholder into
@@ -525,16 +490,17 @@ checkout. The scripts are stdlib-only (Python ≥ 3.9) and self-contain
 canonical-file set (including `ADR_SLUGS_REQUIRED`), the frontmatter
 subset, required references, and text-scan roots.
 
-`sweep_adr_refs.py` is the migration tool. Run it once after a
-scaffold-into-existing operation, or whenever the user has legacy
-numeric `ADR NNN` references in their own docs and wants to migrate
-to slug form.
+`sweep_adr_refs.py` is a one-way legacy-migration tool. It exists for
+repos upgrading from the pre-slug-canonical harness (numbered
+`NNN-<slug>.md` filenames with `ADR NNN` prose refs). On a fresh
+slug-only scaffold it has nothing to migrate and is a no-op. Not part
+of the scaffold pipeline.
 
-Do **not** wire them into pre-commit / Makefile / Task / CI — that is
-stack-specific and lives in `docs/processes/dev-setup.md` § Harness
-validators. Example snippets ship in
-`docs/decisions/007-harness-validators.md` § Appendix, marked
-explicitly as example-only.
+Do **not** wire any of these into pre-commit / Makefile / Task / CI —
+that is stack-specific and lives in `docs/processes/dev-setup.md`
+§ Harness validators. Example snippets ship in
+`docs/decisions/harness-validators.md` § Appendix, marked explicitly
+as example-only.
 
 Flag in the Step 18 report: "Harness validators installed at
 `scripts/harness/`. Requires `python3 ≥ 3.9` on `PATH`. Wiring
@@ -597,11 +563,11 @@ and older than the changelog head.
    of bullet>" lacks ADR/§ citation`. **Do not** halt the audit or
    roll back the marker — citation drift is documentation hygiene,
    not a contract violation. If the Hard constraints block is absent
-   entirely (older harness without ADR 005 applied), skip silently —
+   entirely (older harness without ADR hard-constraints applied), skip silently —
    the citation check is conditional on the block existing.
 
 6. **Section-order check for AGENTS.md reorders.** When a changelog
-   entry includes an AGENTS.md heading reorder step (e.g. ADR 005's
+   entry includes an AGENTS.md heading reorder step (e.g. ADR hard-constraints'
    step 4), do the following *before* writing:
    a. Parse the current top-level heading order in the target
       repo's `AGENTS.md`.
@@ -627,24 +593,19 @@ plus a closing **Bootstrap contract** verdict:
   with its value. Note `docs/FEATURES.md` as an empty ledger by design
   (rows are added during phase 1 of the first brief — *not* a
   needs-filling file). List each harness ADR by `id:` slug with its
-  assigned filename (e.g., `ADR session-exit
-  → docs/decisions/002-session-exit.md`), the fleet model policy at
-  `docs/processes/model-policy.md`, the initialization checklist at
+  filename (e.g., `ADR session-exit → docs/decisions/session-exit.md`),
+  the fleet model policy at `docs/processes/model-policy.md`, the
+  initialization checklist at
   `docs/processes/initialization-checklist.md`, the cold-start test at
   `docs/processes/cold-start-test.md`, and the four harness validators
-  at `scripts/harness/`. If any harness ADR landed at a non-canonical
-  number (Step 13 § Assignment algorithm), call that out — flag the
-  assigned number and note that `legacy_numbers:` has been populated
-  so the operator can run `python3 scripts/harness/sweep_adr_refs.py
-  --write` to migrate any pre-existing numeric references in their
-  own docs.
+  at `scripts/harness/`.
 - **Skipped (already existed)** — existing files not touched.
 - **Needs filling** — files written with placeholder content the user
   must resolve. At minimum: `ARCHITECTURE.md`, `SECURITY.md`,
   `docs/processes/dev-setup.md` (including its "Feature verification
   convention" section, the independence assertion under "Evaluator
   convention", and the wiring contract under "Harness validators"),
-  and any `{{PLACEHOLDER}}` remaining in ADR 001. Repos may also want
+  and any `{{PLACEHOLDER}}` remaining in ADR harness-design. Repos may also want
   to substitute `{{REPO_NAME}}` in the `owner:` frontmatter field of
   every canonical markdown file — left as a literal placeholder by
   design so the choice is explicit.
@@ -717,7 +678,7 @@ If the `CLAUDE.md` symlink fell back to a copy (Step 15), call it out.
   staged source file not covered. The actual pre-commit script
   (`scripts/verify-plan-coverage.sh` or equivalent) is stack-specific
   and must be implemented after scaffolding. The Go reference
-  implementation lives in the ms-search repo at ADR 003.
+  implementation lives in the ms-search repo at ADR evaluator-gate.
 - **The PreToolUse covers: hook IS shipped** as a reference (Step
   16c). It is the in-execution counterpart to the pre-commit sensor —
   earlier feedback loop, same `covers:` contract. Activation is

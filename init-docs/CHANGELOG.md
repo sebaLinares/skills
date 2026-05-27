@@ -20,6 +20,119 @@ one entry at a time.
 
 ---
 
+## 2026-05-30 — ADR slugs as the canonical identifier (replacing)
+
+**What:** ADR identity becomes slug-only across filenames, URLs, and
+prose. Filenames are `docs/decisions/<slug>.md` — the leading `NNN-`
+prefix is removed. URL references in shipped assets are
+`decisions/<slug>.md`. The `legacy_numbers:` frontmatter field is
+deleted from every harness ADR and from `REQUIRED_METADATA_KEYS_ADR`.
+The "Assignment algorithm (collision-safe)" subsection of SKILL.md
+Step 13 is replaced by a one-paragraph idempotency rule (write
+`<slug>.md` if absent; skip if present with matching `id:`; halt on
+mismatch). The "ADR identity and format" appendix in `harness.md` is
+deleted; convention now lives in the new ADR adr-slug-canonical.
+
+The harness ships a new eighth ADR — `adr-slug-canonical` — recording
+this decision. `ADR_SLUGS_REQUIRED` in `_canonical_manifest.py` grows
+from 7 → 8. `sweep_adr_refs.py` is simplified to a one-way
+legacy-migration tool: URL rewriting, `legacy_numbers:` parsing, and
+the `build_url_rewrites`/`parse_legacy_numbers` helpers are removed; it
+now only rewrites `ADR NNN` prose refs to `ADR <slug>` using the
+number→slug map built from the existing `NNN-<slug>.md` filenames at
+migration time.
+
+**Why:** The previous hybrid model (slug `id:` + numeric filenames +
+`legacy_numbers:` migration field) left numbers load-bearing in three
+places — filenames, URLs in prose, numeric prose refs — and an
+adversarial review in a downstream repo found drift bugs where
+renumbered ADRs cited `ADR 003` pointing at the wrong document. The
+sweep utility could not detect this because it excluded
+`docs/decisions/` from its rewrite target set. Slugs do not drift; the
+decision collapses the surface on which numeric drift can manifest.
+
+**Files touched:** `assets/harness-design.md` through
+`assets/harness-validators.md` (renamed from `assets/00N-*.md`,
+`legacy_numbers:` line removed), `assets/adr-slug-canonical.md` (new),
+`assets/AGENTS.md`, `assets/PLANS.md`, `assets/harness.md`,
+`assets/docs-README.md`, `assets/dev-setup.md`,
+`assets/references-README.md`,
+`assets/scripts/_canonical_manifest.py`,
+`assets/scripts/sweep_adr_refs.py`,
+`SKILL.md`, `CHANGELOG.md`.
+
+**How to apply (replacing — audit halts and asks before applying):**
+
+1. **Sweep numeric prose refs first.** From the target repo root, run
+   `python3 scripts/harness/sweep_adr_refs.py --write`. The tool reads
+   the current `NNN-<slug>.md` filenames in `docs/decisions/`, builds
+   a number→slug map, and rewrites every `ADR NNN` text ref in the
+   target repo's non-ADR docs to `ADR <slug>`. Idempotent. **Stop with
+   conflict report** if `discover_adrs()` reports a missing `id:`
+   slug on any ADR file — re-run a prior scaffold first.
+
+2. **Rename ADR files to slug-only.** For each
+   `docs/decisions/NNN-<slug>.md`, `git mv` it to
+   `docs/decisions/<slug>.md`. Skip individually if the file is
+   already at `<slug>.md`. **Stop with conflict report** if two ADR
+   files would collapse to the same slug (collision).
+
+3. **Drop `legacy_numbers:` frontmatter.** For each ADR file under
+   `docs/decisions/`, remove any line starting with `legacy_numbers:`
+   from its frontmatter block. Skip individually if the line is
+   already absent. The field is no longer part of the schema.
+
+4. **Rewrite URL references repo-wide.** For each text-source file
+   under `docs/`, `.claude/`, `scripts/`, and the repo-root markdown
+   anchors (`AGENTS.md`, `ARCHITECTURE.md`, `SECURITY.md`,
+   `CLAUDE.md` if a regular file), substitute `decisions/NNN-<slug>.md`
+   → `decisions/<slug>.md` for every numeric URL form. Sed pattern:
+   `s|decisions/[0-9]\+-\([a-z][a-z0-9-]*\)\.md|decisions/\1.md|g`.
+   Skip individually if the file already contains zero numeric URL
+   forms.
+
+5. **Fix the naming-convention tables.** In `AGENTS.md`
+   § Where to save outputs and in `docs/processes/harness.md`
+   (workflow table at Phase 4 and the artifacts table under § Where
+   artifacts live), rewrite the ADR row's Naming cell from
+   `NNN-<title>.md (sequential)` to `<slug>.md (slug = id:
+   frontmatter; see ADR adr-slug-canonical)`. Idempotent — skip if
+   already rewritten.
+
+6. **Delete the harness.md ADR appendix.** Remove the
+   `## Appendix — ADR identity and format` section (heading + body)
+   from the *target repo's* `docs/processes/harness.md`. Replace with
+   the seven-line pointer in `~/.claude/skills/init-docs/assets/harness.md`
+   § "ADR identity and format" (heading is now `## ADR identity and
+   format`, body cites ADR adr-slug-canonical). Skip if the target's
+   trailing section already matches the new shape.
+
+7. **Add the new ADR.** Copy
+   `~/.claude/skills/init-docs/assets/adr-slug-canonical.md` to
+   `docs/decisions/adr-slug-canonical.md`. Skip if already present
+   with matching `id:`.
+
+8. **Replace the harness validator scripts.** Copy
+   `_canonical_manifest.py`, `check_harness_structure.py`,
+   `garbage_collect_docs.py`, and `sweep_adr_refs.py` from
+   `~/.claude/skills/init-docs/assets/scripts/` to the target's
+   `scripts/harness/`. Skip individually if byte-identical.
+   `ADR_SLUGS_REQUIRED` now contains 8 entries; the validator will
+   expect `docs/decisions/adr-slug-canonical.md` after step 7.
+
+9. **Verify with the structure check.** Run
+   `python3 scripts/harness/check_harness_structure.py --dry-run`.
+   Expected: zero findings related to ADR existence, frontmatter, or
+   cross-references. **Stop with conflict report** if any ADR-related
+   finding remains — one of steps 1–8 did not complete idempotently.
+
+**Stack-specific notes:** None. The slug convention, the manifest
+structure, and the migration steps are stack-agnostic. The Python
+validators remain stdlib-only (≥ 3.9). Wiring (pre-commit / Makefile /
+CI) is unchanged.
+
+---
+
 ## 2026-05-29 — Fix self-referential false positive in absolute-path scanner
 
 **What:** `check_harness_structure.py` now excludes `_canonical_manifest.py`

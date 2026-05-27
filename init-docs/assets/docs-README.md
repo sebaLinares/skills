@@ -59,17 +59,20 @@ Point-in-time research, gap reports, investigations. Dated — may be superseded
 ## Decisions
 Architecture Decision Records (ADRs). Explain *why* the system is the way it is.
 
-ADRs are identified by their `id:` slug, not by filename number. The
-number prefix is a per-repo sort key only — references inside docs use
-the slug. See `processes/harness.md` § ADR identity for the convention.
+ADRs are identified by their `id:` slug. The filename is `<slug>.md`
+(no numeric prefix). References inside docs use slug form: `ADR <slug>`
+in prose, `decisions/<slug>.md` in markdown links. See
+[ADR adr-slug-canonical](decisions/adr-slug-canonical.md) for the
+convention.
 
-- [ADR harness-design — Harness Engineering for AI Agent Usage](decisions/001-harness-design.md) — guides + sensors, phase gates, plans as first-class artifacts `#ai-harness` `#adr`
-- [ADR session-exit — Session exit closes the bootstrap asymmetry](decisions/002-session-exit.md) — explicit session close-out checklist and chat-sweep routing `#ai-harness` `#adr`
-- [ADR evaluator-gate — Evaluator gate at plan completion](decisions/003-evaluator-gate.md) — independent evaluator pass before `active/` → `completed/`; worker/checker split for plan closure `#ai-harness` `#adr`
-- [ADR fleet-model-policy — Fleet model policy](decisions/004-fleet-model-policy.md) — named models per harness step; Sonnet orchestrator, Opus design subagent, GPT-5.5 checker via codex plugin `#ai-harness` `#adr`
-- [ADR hard-constraints — Hard constraints as a separate category from phase gates](decisions/005-hard-constraints.md) — `## Hard constraints (MUST / MUST NOT)` section in `AGENTS.md`, distinct from phase gates `#ai-harness` `#adr`
-- [ADR pre-approval-critic-gate — Pre-approval critic gate](decisions/006-pre-approval-critic-gate.md) — unconditional pre-approval critic pass; simple/complex threshold removed; pre-approval critic transcript artifact `#ai-harness` `#adr`
-- [ADR harness-validators — Harness validators](decisions/007-harness-validators.md) — stdlib Python structure check + doc garbage collector at `scripts/harness/`; stack-agnostic wiring `#ai-harness` `#adr`
+- [ADR harness-design — Harness Engineering for AI Agent Usage](decisions/harness-design.md) — guides + sensors, phase gates, plans as first-class artifacts `#ai-harness` `#adr`
+- [ADR session-exit — Session exit closes the bootstrap asymmetry](decisions/session-exit.md) — explicit session close-out checklist and chat-sweep routing `#ai-harness` `#adr`
+- [ADR evaluator-gate — Evaluator gate at plan completion](decisions/evaluator-gate.md) — independent evaluator pass before `active/` → `completed/`; worker/checker split for plan closure `#ai-harness` `#adr`
+- [ADR fleet-model-policy — Fleet model policy](decisions/fleet-model-policy.md) — named models per harness step; Sonnet orchestrator, Opus design subagent, GPT-5.5 checker via codex plugin `#ai-harness` `#adr`
+- [ADR hard-constraints — Hard constraints as a separate category from phase gates](decisions/hard-constraints.md) — `## Hard constraints (MUST / MUST NOT)` section in `AGENTS.md`, distinct from phase gates `#ai-harness` `#adr`
+- [ADR pre-approval-critic-gate — Pre-approval critic gate](decisions/pre-approval-critic-gate.md) — unconditional pre-approval critic pass; simple/complex threshold removed; pre-approval critic transcript artifact `#ai-harness` `#adr`
+- [ADR harness-validators — Harness validators](decisions/harness-validators.md) — stdlib Python structure check + doc garbage collector at `scripts/harness/`; stack-agnostic wiring `#ai-harness` `#adr`
+- [ADR adr-slug-canonical — ADR slugs as the canonical identifier](decisions/adr-slug-canonical.md) — slug-only filenames, slug-only URLs and prose refs; no numeric ADR identity anywhere `#ai-harness` `#adr`
 
 ## Exec plans
 Active and completed initiative plans. First-class artifacts — reviewed before any code is written. Plan-scoped decisions live inline; architectural decisions escalate to ADRs.

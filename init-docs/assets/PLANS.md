@@ -39,7 +39,7 @@ is `codex:adversarial-review`; the hook invokes the underlying
 `codex-companion.mjs adversarial-review` script directly because the slash
 command sets `disable-model-invocation: true`. The verdict lands in the
 plan's `## Pre-approval critic transcript` section. See
-[ADR pre-approval-critic-gate](decisions/006-pre-approval-critic-gate.md).
+[ADR pre-approval-critic-gate](decisions/pre-approval-critic-gate.md).
 
 ## Frontmatter
 
