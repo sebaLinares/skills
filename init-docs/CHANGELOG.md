@@ -20,6 +20,22 @@ one entry at a time.
 
 ---
 
+## 2026-05-29 — Fix self-referential false positive in absolute-path scanner
+
+**What:** `check_harness_structure.py` now excludes `_canonical_manifest.py`
+from text scans, in addition to itself. The manifest contains the
+`/Users/[^\s...]+` pattern strings in `ABSOLUTE_PATH_PATTERNS`, which caused
+the absolute-path rule to flag the manifest's own source code as a finding.
+
+**Why it was broken:** `iter_text_sources()` already excluded the validator
+script itself, but not the manifest it imports — leaving a self-referential
+false positive on every fresh install.
+
+**How to apply (idempotent):** Replace `scripts/harness/check_harness_structure.py`
+with the updated asset. No structural changes to the repo; 
+
+---
+
 ## 2026-05-28 — ADR identity by slug, not number
 
 **What:** ADRs are now identified by their `id:` frontmatter slug

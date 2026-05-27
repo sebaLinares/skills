@@ -117,8 +117,11 @@ def iter_text_sources() -> list[Path]:
                     continue
                 if path.is_file():
                     files.add(path)
-    script_path = Path(__file__).resolve()
-    return sorted(p for p in files if p.is_file() and p.resolve() != script_path)
+    excluded = {
+        Path(__file__).resolve(),
+        (Path(__file__).parent / "_canonical_manifest.py").resolve(),
+    }
+    return sorted(p for p in files if p.is_file() and p.resolve() not in excluded)
 
 
 def check_existence(adr_files: dict[str, Path]) -> list[str]:
