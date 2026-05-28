@@ -2,7 +2,7 @@
 # verify-covers-hook.sh — PreToolUse hook reference implementation.
 #
 # Blocks Edit / Write / MultiEdit tool calls whose file_path is not
-# prefix-matched by any covers: glob in an active ExecPlan
+# prefix-matched by any covers: path prefix in an active ExecPlan
 # (`docs/exec-plans/active/*.md`).
 #
 # Contract (ADR hard-constraints, covers: rule):
@@ -85,8 +85,9 @@ esac
 plans_dir="$repo_root/docs/exec-plans/active"
 [[ ! -d "$plans_dir" ]] && exit 0
 
-# Collect covers: globs from every plan in active/.
-globs=()
+# Collect covers: path prefixes from every plan in active/.
+prefixes=()
+bad_prefixes=()
 shopt -s nullglob
 for plan in "$plans_dir"/*.md; do
   in_covers=false
@@ -98,7 +99,13 @@ for plan in "$plans_dir"/*.md; do
         g="${g%\"}"; g="${g#\"}"; g="${g%\'}"; g="${g#\'}"
         g="${g%% #*}"
         g="${g% }"
-        globs+=("$g")
+        while [[ "$g" == ./* ]]; do g="${g#./}"; done
+        case "$g" in
+          /*|~/*|file://*)
+            bad_prefixes+=("$g")
+            continue ;;
+        esac
+        prefixes+=("$g")
       else
         in_covers=false
       fi
@@ -106,20 +113,27 @@ for plan in "$plans_dir"/*.md; do
   done < "$plan"
 done
 
+if [[ ${#bad_prefixes[@]} -gt 0 ]]; then
+  cat >&2 <<EOF
+[covers:-hook] active plan has absolute covers: path(s): ${bad_prefixes[*]}
+Use repo-relative paths, optionally prefixed with ./.
+EOF
+  exit 2
+fi
+
 # No active plan or empty covers: → fail open. Other gates will catch
 # unplanned execution; this hook only enforces the covers: contract.
-[[ ${#globs[@]} -eq 0 ]] && exit 0
+[[ ${#prefixes[@]} -eq 0 ]] && exit 0
 
-for glob in "${globs[@]}"; do
-  # shellcheck disable=SC2254  # intentional glob expansion in case
+for prefix in "${prefixes[@]}"; do
   case "$rel_path" in
-    $glob) exit 0 ;;
+    "$prefix"*) exit 0 ;;
   esac
 done
 
 cat >&2 <<EOF
 [covers:-hook] '$rel_path' is not covered by any active plan's covers:.
-Active globs: ${globs[*]}
+Active prefixes: ${prefixes[*]}
 
 Choose:
   (a) extend covers: in the plan (re-approval required, per Phase 6),

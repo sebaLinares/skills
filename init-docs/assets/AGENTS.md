@@ -130,7 +130,7 @@ hard-label clothing, which is worse than no rule at all (see
   ```
 
   **Phase 5 — ExecPlan.** After the analysis is approved and you
-  have scoped the `covers:` globs:
+  have scoped the `covers:` path prefixes:
 
   ```
   Task(
@@ -141,8 +141,8 @@ hard-label clothing, which is worse than no rule at all (see
       feature_id: <feat-NNN or feature-less-reason: <one-line>>
       slug: <kebab-case>
       covers:
-        - <path-glob-1>
-        - <path-glob-2>
+        - <path-prefix-1>
+        - <path-prefix-2>
       analysis_path: docs/analysis/YYYY-MM-DD_<slug>.md
     """
   )
@@ -162,6 +162,11 @@ hard-label clothing, which is worse than no rule at all (see
   missing, they reply `MISSING_FIELDS: [...]` and refuse to write.
   Treat that reply as a contract violation on your side: fix the
   brief and re-invoke. Do not synthesize the missing field from memory.
+  All path fields in those briefs (`source_paths`, `covers`,
+  `analysis_path`) must be repository-relative. Optional leading `./`
+  is fine. If a search tool returns an absolute path under this repo,
+  strip the repo root before invoking the subagent. If a subagent
+  replies `INVALID_PATHS: [...]`, re-invoke with relative paths.
 
   Caveat on hook tags: every tool event fired from inside the
   subagent (its own Reads, Writes, Greps) will still render with the
@@ -231,9 +236,9 @@ substantive output:
    (existing or new) before phase 1 can produce an analysis doc.
 2. Read `docs/README.md` — catalog and tag vocabulary.
 3. Scan `docs/exec-plans/active/` — what is in flight. If a plan is
-   present, read its `covers:` frontmatter and keep the glob list in
-   working context so every subsequent Edit/Write can be checked at the
-   call site (per Hard constraints).
+   present, read its `covers:` frontmatter and keep the path-prefix
+   list in working context so every subsequent Edit/Write can be
+   checked at the call site (per Hard constraints).
 4. Scan `docs/decisions/` — what is already decided.
 5. Note which Features in `docs/FEATURES.md` are `Passing` as the
    baseline for the session-exit verifier dimension.

@@ -21,6 +21,75 @@ the marker one entry at a time.
 
 ---
 
+## 2026-05-28.002 — Ignore Python bytecode artifacts
+
+**What:** New scaffolds now ensure repo-root `.gitignore` ignores
+Python bytecode (`__pycache__/`, `**/__pycache__/`, `*.py[cod]`) along
+with existing Claude local-state paths. `check_harness_structure.py`
+now flags generated Python bytecode under `scripts/`. The shared
+manifest owns the forbidden repo-artifact glob list.
+
+**Why:** Running harness validators can create `__pycache__/` beside
+the shipped Python scripts. These files are local runtime artifacts,
+not harness knowledge.
+
+**Files touched:** root `.gitignore`, `init-docs/.gitignore`,
+`SKILL.md`, `assets/scripts/_canonical_manifest.py`,
+`assets/scripts/check_harness_structure.py`, `CHANGELOG.md`.
+
+**How to apply (idempotent):**
+
+1. Ensure the target repo's `.gitignore` contains:
+
+       __pycache__/
+       **/__pycache__/
+       *.py[cod]
+
+   Append only missing lines.
+2. Replace `scripts/harness/_canonical_manifest.py` and
+   `scripts/harness/check_harness_structure.py` with the shipped
+   assets.
+3. Remove any existing `__pycache__/` or `*.py[cod]` artifacts from
+   `scripts/`.
+4. Set `.harness-version` to `2026-05-28.002`.
+
+## 2026-05-28.001 — Enforce repo-relative harness paths
+
+**What:** Harness path contracts now reject absolute paths at the source,
+not only as a broad text hygiene scan. `check_harness_structure.py`
+validates path-bearing frontmatter in analysis docs and active/completed
+ExecPlans (`related-plan`, `related-adrs`, `analysis`, `adrs`,
+`covers`). The covers hook accepts optional leading `./`, normalizes it
+before matching, and rejects absolute `covers:` entries. Analyst/planner
+subagent briefs now require repo-relative paths and return
+`INVALID_PATHS` when invoked with absolutes.
+
+**Why:** Absolute paths in operator-written analysis docs or completed
+plans point to one machine and do not survive checkout elsewhere.
+
+**Files touched:** `assets/scripts/check_harness_structure.py`,
+`assets/verify-covers-hook.sh`, `assets/harness-analyst.md`,
+`assets/harness-planner.md`, `assets/AGENTS.md`, `assets/PLANS.md`,
+`assets/analysis-template.md`, `assets/exec-plan-template.md`,
+`assets/dev-setup.md`, `assets/harness.md`,
+`assets/harness-validators.md`, `CHANGELOG.md`.
+
+**How to apply (idempotent):**
+
+1. Replace `scripts/harness/check_harness_structure.py` with the
+   shipped asset. Verify it rejects absolute path-bearing frontmatter
+   under `docs/analysis/`, `docs/exec-plans/active/`, and
+   `docs/exec-plans/completed/`.
+2. Replace `.claude/hooks/verify-covers-hook.sh` with the shipped
+   asset if the repo uses the reference hook. Verify `./path/` covers
+   the same files as `path/`, and `/path/` is rejected.
+3. Update the shipped harness docs/subagents so all Task brief path
+   fields are repo-relative and absolute path briefs produce
+   `INVALID_PATHS`.
+4. Replace existing local absolute paths in analysis docs and
+   completed ExecPlans with repo-relative paths or `<repo-root>`.
+5. Set `.harness-version` to `2026-05-28.001`.
+
 ## 2026-05-27.002 — Changelog cursor keys replace date-only harness versioning
 
 **What:** The harness version cursor is now the changelog heading key,

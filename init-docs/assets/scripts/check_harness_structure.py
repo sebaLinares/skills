@@ -11,8 +11,10 @@ Reads the canonical manifest (_canonical_manifest.py) and asserts:
      every resolved ADR file additionally carries `id:`.
   4. Every entry in REQUIRED_REFERENCES contains its required substrings.
   5. No forbidden ephemera under docs/ (FORBIDDEN_DOC_GLOBS).
-  6. No absolute paths in scanned text files (ABSOLUTE_PATH_PATTERNS).
-  7. docs/generated/ is not described as canonical knowledge.
+  6. No generated repo artifacts (FORBIDDEN_REPO_GLOBS).
+  7. Path-bearing frontmatter uses repo-relative paths.
+  8. No absolute paths in scanned text files (ABSOLUTE_PATH_PATTERNS).
+  9. docs/generated/ is not described as canonical knowledge.
 
 Bypass: set HARNESS_BYPASS="<reason>" to short-circuit with exit 0.
 
@@ -42,23 +44,74 @@ def relative(path: Path) -> str:
         return str(path)
 
 
-def parse_front_matter(path: Path) -> dict[str, str]:
+def front_matter_block(path: Path) -> str:
     content = path.read_text(encoding="utf-8")
     if not content.startswith("---\n"):
-        return {}
+        return ""
     end_marker = "\n---\n"
     end_index = content.find(end_marker, 4)
     if end_index == -1:
+        return ""
+    return content[4:end_index]
+
+
+def clean_yaml_value(value: str) -> str:
+    value = re.sub(r"\s+#.*$", "", value).strip()
+    return value.strip('"').strip("'").strip()
+
+
+def parse_front_matter(path: Path) -> dict[str, str]:
+    block = front_matter_block(path)
+    if not block:
         return {}
-    block = content[4:end_index]
     metadata: dict[str, str] = {}
     for raw_line in block.splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#") or ":" not in line:
             continue
         key, value = line.split(":", 1)
-        metadata[key.strip()] = value.strip().strip('"').strip("'")
+        metadata[key.strip()] = clean_yaml_value(value)
     return metadata
+
+
+def parse_front_matter_list(path: Path, key: str) -> list[str]:
+    block = front_matter_block(path)
+    if not block:
+        return []
+    lines = block.splitlines()
+    for index, raw_line in enumerate(lines):
+        match = re.match(rf"^{re.escape(key)}:\s*(.*)$", raw_line)
+        if not match:
+            continue
+        inline = clean_yaml_value(match.group(1))
+        if inline == "[]":
+            return []
+        if inline.startswith("[") and inline.endswith("]"):
+            body = inline[1:-1].strip()
+            if not body:
+                return []
+            return [clean_yaml_value(part) for part in body.split(",")]
+        if inline:
+            return [inline]
+
+        values: list[str] = []
+        for child in lines[index + 1 :]:
+            if re.match(r"^\S[^:]*:\s*", child):
+                break
+            child_match = re.match(r"^\s*-\s+(.+)$", child)
+            if child_match:
+                values.append(clean_yaml_value(child_match.group(1)))
+        return values
+    return []
+
+
+def is_absolute_path(value: str) -> bool:
+    return (
+        value.startswith("/")
+        or value.startswith("~/")
+        or value.startswith("file://")
+        or re.match(r"^[A-Za-z]:[\\/]", value) is not None
+    )
 
 
 def discover_adr_files() -> tuple[dict[str, Path], list[str]]:
@@ -172,6 +225,42 @@ def check_frontmatter(adr_files: dict[str, Path]) -> list[str]:
     return errors
 
 
+def check_path_frontmatter() -> list[str]:
+    errors: list[str] = []
+    specs = [
+        (
+            "docs/exec-plans/active",
+            {"analysis": "scalar", "adrs": "list", "covers": "list"},
+        ),
+        (
+            "docs/exec-plans/completed",
+            {"analysis": "scalar", "adrs": "list", "covers": "list"},
+        ),
+        ("docs/analysis", {"related-plan": "scalar", "related-adrs": "list"}),
+    ]
+    for relative_root, fields in specs:
+        root = REPO_ROOT / relative_root
+        if not root.exists():
+            continue
+        for path in sorted(root.glob("*.md")):
+            metadata = parse_front_matter(path)
+            for field, shape in fields.items():
+                values = (
+                    [metadata.get(field, "")]
+                    if shape == "scalar"
+                    else parse_front_matter_list(path, field)
+                )
+                for value in (v for v in values if v):
+                    if is_absolute_path(value):
+                        errors.append(
+                            f"{relative(path)}: frontmatter `{field}` uses "
+                            f"absolute path `{value}`. Use a repo-relative "
+                            "path (optional leading `./`) or `<repo-root>` "
+                            "placeholder."
+                        )
+    return errors
+
+
 def check_required_references() -> list[str]:
     errors: list[str] = []
     for relative_path, references in manifest.REQUIRED_REFERENCES.items():
@@ -201,6 +290,21 @@ def check_forbidden_docs() -> list[str]:
             errors.append(
                 f"{relative(path)}: forbidden ephemeral artifact under "
                 "docs/. Move it to docs/generated/ or output/."
+            )
+    return errors
+
+
+def check_forbidden_repo_artifacts() -> list[str]:
+    errors: list[str] = []
+    for pattern in manifest.FORBIDDEN_REPO_GLOBS:
+        for path in sorted(REPO_ROOT.glob(pattern)):
+            if path.is_symlink():
+                continue
+            if not (path.is_file() or path.is_dir()):
+                continue
+            errors.append(
+                f"{relative(path)}: forbidden generated artifact. "
+                "Add it to .gitignore and remove it from the working tree."
             )
     return errors
 
@@ -263,8 +367,10 @@ def main() -> int:
     errors.extend(adr_errors)
     errors.extend(check_existence(adr_files))
     errors.extend(check_frontmatter(adr_files))
+    errors.extend(check_path_frontmatter())
     errors.extend(check_required_references())
     errors.extend(check_forbidden_docs())
+    errors.extend(check_forbidden_repo_artifacts())
     errors.extend(check_text_content())
 
     if errors:

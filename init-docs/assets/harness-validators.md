@@ -42,7 +42,8 @@ installed at `scripts/harness/` in every scaffolded repo:
    check. Verifies existence of every canonical file, presence of the
    4-key YAML frontmatter on the markdown subset, presence of required
    cross-references, absence of forbidden ephemera under `docs/`, and
-   absence of absolute paths or generated/-as-canonical phrasing in any
+   absence of absolute paths in scanned text or path-bearing
+   frontmatter. Also rejects generated/-as-canonical phrasing in any
    scanned text. Exit non-zero on any finding.
 
 2. **`garbage_collect_docs.py`** — slower, broader audit suitable for

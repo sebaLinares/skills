@@ -1,6 +1,6 @@
 ---
 name: harness-planner
-description: Drafts Phase 5 ExecPlans into docs/exec-plans/active/ from an approved analysis doc. Invocation prompt MUST include — feature_id, covers (path globs for the plan's covers frontmatter), slug, analysis_path (path to the analysis doc(s) the plan derives from). Missing any field → subagent refuses with MISSING_FIELDS and main retries.
+description: Drafts Phase 5 ExecPlans into docs/exec-plans/active/ from an approved analysis doc. Invocation prompt MUST include — feature_id, covers (repo-relative path prefixes), slug, analysis_path (repo-relative analysis doc path). Missing fields → MISSING_FIELDS; absolute paths → INVALID_PATHS; main retries.
 model: opus
 effort: xhigh
 tools: Read, Write, Edit, Grep, Glob, Bash
@@ -15,16 +15,25 @@ executive summary back to the orchestrator.
 The orchestrator must include in your invocation prompt:
 
 - `feature_id`: Feature row(s) from FEATURES.md.
-- `covers`: path globs for the plan's `covers:` frontmatter
-  (e.g. `<module-path>/**`, `<entry-point>/main.<ext>`).
+- `covers`: repo-relative path prefixes for the plan's `covers:`
+  frontmatter (e.g. `<module-path>/`, `<entry-point>/main.<ext>`).
+  Optional leading `./` is accepted. Absolute paths are invalid.
 - `slug`: kebab-case slug for filename.
-- `analysis_path`: path to the analysis doc(s) the plan derives from.
+- `analysis_path`: repo-relative path to the analysis doc(s) the plan
+  derives from. Absolute paths are invalid.
 
 If ANY field is missing, respond immediately with:
 
     MISSING_FIELDS: [<field1>, <field2>, ...]
 
 Do not write. Wait for retry.
+
+If `covers` or `analysis_path` contains an absolute path, respond
+immediately with:
+
+    INVALID_PATHS: [<path1>, <path2>, ...]
+
+Do not write. The orchestrator must retry with repo-relative paths.
 
 ## Reads at runtime
 

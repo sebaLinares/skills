@@ -2,7 +2,7 @@
 status: draft
 date: YYYY-MM-DD
 topic: <short-name>
-related-plan: <link or "none yet">
+related-plan: <repo-relative path or "none yet">
 related-adrs: []
 ---
 
@@ -20,7 +20,8 @@ context enters the repo. Be precise about what is being asked for and why.
 ## 2. Context
 
 What exists today that is relevant. Link to files, functions, services, other
-docs. Do not paraphrase when you can link.
+docs. Use repository-relative paths; do not preserve local absolute paths.
+Do not paraphrase when you can link.
 
 ## 3. Findings
 

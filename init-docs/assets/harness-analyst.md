@@ -1,6 +1,6 @@
 ---
 name: harness-analyst
-description: Drafts Phase 2 analysis docs into docs/analysis/. Invocation prompt MUST include — feature_id (from FEATURES.md, or feature-less-reason), slug (kebab-case topic for filename), source_paths (files / docs the analysis investigates). Missing any field → subagent refuses with MISSING_FIELDS and main retries.
+description: Drafts Phase 2 analysis docs into docs/analysis/. Invocation prompt MUST include — feature_id (from FEATURES.md, or feature-less-reason), slug (kebab-case topic for filename), source_paths (repo-relative files / docs to investigate). Missing fields → MISSING_FIELDS; absolute paths → INVALID_PATHS; main retries.
 model: opus
 effort: xhigh
 tools: Read, Write, Edit, Grep, Glob, Bash, WebFetch
@@ -16,13 +16,20 @@ The orchestrator must include in your invocation prompt:
 
 - `feature_id`: Feature row from FEATURES.md, OR `feature-less-reason: <one-line>`.
 - `slug`: kebab-case topic for filename.
-- `source_paths`: list of paths to investigate (source files, docs, schemas).
+- `source_paths`: repo-relative paths to investigate (source files, docs,
+  schemas). Optional leading `./` is accepted. Absolute paths are invalid.
 
 If ANY field is missing, respond immediately with:
 
     MISSING_FIELDS: [<field1>, <field2>, ...]
 
 Do not write. Do not investigate. Wait for retry.
+
+If `source_paths` contains an absolute path, respond immediately with:
+
+    INVALID_PATHS: [<path1>, <path2>, ...]
+
+Do not write. The orchestrator must retry with repo-relative paths.
 
 ## Reads at runtime
 

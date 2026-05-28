@@ -17,3 +17,7 @@
 !commit/**
 !changelog/
 !changelog/**
+
+# Generated Python bytecode
+**/__pycache__/
+**/*.py[cod]

@@ -3,9 +3,9 @@ status: draft
 date: YYYY-MM-DD
 id: <jira-id-or-initiative-code>
 slug: <short-slug>
-analysis: <link to the analysis doc that produced this plan>
+analysis: <repo-relative path to the analysis doc that produced this plan>
 adrs: []
-covers: []  # path prefixes this plan authorises changes to; required when status: approved
+covers: []  # repo-relative path prefixes; required when status: approved
 features: []  # feat-NNN IDs from docs/FEATURES.md this plan delivers; non-optional (non-empty OR pair with feature-less-reason)
 feature-less-reason:  # one line; required iff features is empty (e.g. "pure refactor; no user-observable change")
 ---

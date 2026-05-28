@@ -493,7 +493,7 @@ enforce the documentation contract:
 - `check_harness_structure.py` — existence of canonical files, 4-key
   YAML frontmatter on the markdown subset, required cross-references,
   no forbidden ephemera under `docs/`, no absolute paths in scanned
-  text. Fail-fast, suitable for pre-commit.
+  text or path-bearing frontmatter. Fail-fast, suitable for pre-commit.
 - `garbage_collect_docs.py` — broken-reference scan, stale-review
   flag, orphan-doc detection. Slower; suitable for nightly or weekly
   runs. Renders a markdown report.

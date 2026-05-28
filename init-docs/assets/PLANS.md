@@ -49,17 +49,19 @@ Every ExecPlan begins with a YAML frontmatter block. Required fields:
 - `date` — `YYYY-MM-DD` the plan was created.
 - `id` — ticket ID or initiative code.
 - `slug` — short slug used in the filename.
-- `analysis` — repository-relative path to the analysis doc that produced this plan.
-- `adrs` — list of repository-relative paths to ADRs cited by this plan (may be empty).
+- `analysis` — repository-relative path to the analysis doc that produced this plan. Absolute paths are invalid.
+- `adrs` — list of repository-relative paths to ADRs cited by this plan (may be empty). Absolute paths are invalid.
 - `covers` — list of path prefixes this plan authorises changes to. **Required when `status: approved`.** See below.
 - `features` — list of `feat-NNN` IDs from [`FEATURES.md`](FEATURES.md) that this plan delivers. **Non-optional:** either non-empty (every ID must resolve to a row in `FEATURES.md`) or empty paired with `feature-less-reason`. See below.
 - `feature-less-reason` — one-line string declaring why this plan ships no user-observable behavior. **Required iff `features: []`.** Refactors, infra, dev-experience, and docs-only plans use this escape.
 
 ### The `covers:` field
 
-`covers:` is a list of repository-relative **path prefixes**. A source
-file is considered "covered" by this plan if any entry in `covers:` is
-a prefix of the file's path. Prefix match is literal; no globbing.
+`covers:` is a list of repository-relative **path prefixes**. Optional
+leading `./` is accepted and means the same path without `./`.
+Absolute paths are invalid. A source file is considered "covered" by
+this plan if any entry in `covers:` is a prefix of the file's path.
+Prefix match is literal; no globbing.
 Trailing `/` covers a directory and everything inside it:
 
     covers:

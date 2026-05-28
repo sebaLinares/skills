@@ -85,7 +85,8 @@ required):
   (`AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `SECURITY.md`,
   `README.md`) → exit 0 (always allowed).
 - For each plan in `docs/exec-plans/active/*.md`, parse the `covers:`
-  YAML list. If the target path prefix-matches any glob → exit 0.
+  YAML list. Normalize optional leading `./`; reject absolute entries.
+  If the target path prefix-matches any entry → exit 0.
 - Otherwise → write a remediation message to stderr and exit non-zero
   (Claude Code reads stderr and surfaces the rejection to the agent).
 - Bypass via `HARNESS_BYPASS="<reason>"` env var. Mirrors the
@@ -103,7 +104,8 @@ Two stdlib-Python scripts ship at `scripts/harness/`:
 - `check_harness_structure.py` — fast structural check. Asserts the
   canonical files exist, carry the 4-key YAML frontmatter where
   required, and reference each other where the manifest says they
-  must. No forbidden ephemera, no absolute paths.
+  must. No forbidden ephemera, no absolute paths in scanned text or
+  path-bearing frontmatter.
 - `garbage_collect_docs.py` — slower audit. Broken-reference scan,
   metadata staleness (default 90 days), orphan-doc detection,
   ephemeral-doc detection. Renders a markdown report; `--strict`

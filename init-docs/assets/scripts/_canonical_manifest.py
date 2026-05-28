@@ -157,6 +157,13 @@ FORBIDDEN_DOC_GLOBS: list[str] = [
 ]
 
 
+# Generated repo artifacts that should never be committed.
+FORBIDDEN_REPO_GLOBS: list[str] = [
+    "scripts/**/__pycache__",
+    "scripts/**/*.py[cod]",
+]
+
+
 # Regex patterns flagged in any scanned text file. Match → finding.
 ABSOLUTE_PATH_PATTERNS: list[str] = [
     r"/Users/[^\s`\"')]+",

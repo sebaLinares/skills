@@ -197,6 +197,23 @@ tracked by git. `exec-plans/active/`, `exec-plans/completed/`, and
 `generated/` especially matter — these are first-class artifact
 locations and must exist even when empty.
 
+## Step 3a — Ensure local generated artifacts are ignored
+
+Ensure the repo-root `.gitignore` exists and contains these entries:
+
+```
+.claude/settings.local.json
+.claude/worktrees/
+.claude/memory/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+```
+
+Append only missing entries. Do not remove or reorder existing ignore
+rules. These are local/generated artifacts; they are never harness
+knowledge.
+
 ## Step 4 — Write the analysis template
 
 Copy `assets/analysis-template.md` to `docs/analysis/_template.md`.
