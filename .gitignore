@@ -13,6 +13,8 @@
 # Published skills (add two lines per new skill)
 !init-docs/
 !init-docs/**
+!init-harness/
+!init-harness/**
 !commit/
 !commit/**
 !changelog/
