@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "/commit",
-      "expected_output": "Skill detects staged or unstaged changes, spawns Haiku subagent for message, commits with Conventional Commit message + Co-Authored-By trailer, reports result.",
+      "expected_output": "Skill detects staged or unstaged changes, spawns Haiku subagent for message, commits with Conventional Commit message, no model co-author trailer, reports result.",
       "files": [],
       "expectations": [
         "Runs git status or git diff to detect changes before doing anything",
@@ -13,7 +13,7 @@
         "Generated commit message follows Conventional Commits format: type(scope): description",
         "Commit type is one of: feat, fix, chore, refactor, test, docs, ai, schema, security, config",
         "Runs git commit with the generated message",
-        "Co-Authored-By trailer is included in the commit",
+        "No Co-Authored-By or similar model co-author trailer is included",
         "Reports commit hash and message to the user"
       ]
     },
@@ -28,7 +28,7 @@
         "Does not skip repos with changes in subdirs",
         "Generates a distinct commit message per repo",
         "Each message follows Conventional Commits format",
-        "Co-Authored-By trailer included in each commit",
+        "No Co-Authored-By or similar model co-author trailer is included in any commit",
         "Reports all commits made in a clean summary"
       ]
     },

@@ -32,4 +32,5 @@ Or just say: **"commit this"**, **"make a commit"**, **"save my work"**
 - Follows [Conventional Commits](https://www.conventionalcommits.org/): `feat`, `fix`, `chore`, `refactor`, `test`, `docs`, `ai`, `schema`, `security`, `config`
 - If the branch name contains a ticket ID (`ABC-123`), it's appended to the subject
 - If docs files (`docs/analysis/`, `docs/exec-plans/`, `docs/decisions/`) are staged, a body block is added with paths
+- Never adds model co-author trailers
 - Never skips pre-commit hooks (`--no-verify`)

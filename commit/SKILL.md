@@ -84,6 +84,7 @@ Rules:
 - If changes span multiple concerns, pick the dominant type.
 - Be specific but concise — sacrifice grammar for brevity.
 - Output ONLY the commit message subject line. No body, no explanation.
+- Never add or reference model co-authoring. No `Co-authored-by`, `Co-Authored-By`, or similar trailer.
 
 Repo: <basename of pwd>
 Last commit for context: <last commit subject>
@@ -118,6 +119,8 @@ Rules:
 If no docs are staged, the commit message is just the subject line.
 
 ## Step 6 — Commit
+
+Never add or reference model co-authoring in the commit message. Do not include `Co-authored-by`, `Co-Authored-By`, or similar trailers.
 
 ```bash
 git commit -m "<subject>
