@@ -27,6 +27,12 @@ Invariants — they apply at every moment, not only at phase transitions.
   `docs/exec-plans/active/`. A direct instruction ("add X", "fix Y") is the
   brief for the Plan phase, not a license to skip it.
   *(See § Phase gates and [`docs/processes/harness.md`](docs/processes/harness.md).)*
+- **MUST** treat plan approval as explicit and plan-scoped. Answering
+  clarifying questions, acknowledgement, or silence is **not** approval — it
+  refines the plan, it does not authorise execution. After any clarifying
+  exchange, restate what changed and ask for approval; then wait. Never infer
+  approval.
+  *(See [`docs/processes/harness.md`](docs/processes/harness.md) § Phase 3.)*
 - **MUST NOT** edit files outside the active plan's `covers:` during
   execution. If a needed change falls outside, stop and choose: extend
   `covers:`, log it to [`docs/tech-debt-tracker.md`](docs/tech-debt-tracker.md),

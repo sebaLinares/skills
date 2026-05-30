@@ -91,6 +91,15 @@ check reads it) and `verify:` (the command that proves "done").
 Gate: the plan satisfies `PLANS.md`, `covers:` and `verify:` are set, and the
 user has approved it. No code before this.
 
+**What counts as approval.** Approval is explicit and plan-scoped — an
+affirmative go-ahead on *this* plan ("approved", "go ahead", "build it", "yes,
+implement it"). These are **not** approval: answering your clarifying questions
+(that refines the plan, it does not authorise it); acknowledgement ("ok",
+"makes sense", "sounds good") or silence; approval of an earlier or different
+version of the plan. If a clarifying exchange changed the plan, restate what
+changed and ask for approval before Execute. When unsure whether you have it,
+ask "approve this plan?" and stop. Never infer approval from engagement.
+
 > An independent review of the plan (a fresh agent, a separate session, a
 > human, or an external CLI like Codex) is *encouraged* but not a mechanical
 > gate in this harness. Invoke it manually when the change warrants a second
