@@ -1,7 +1,7 @@
 ---
 owner: {{REPO_NAME}}
 status: stable
-last_reviewed: 2026-05-26
+last_reviewed: 2026-06-11
 update_trigger: on-harness-change
 ---
 
@@ -121,6 +121,18 @@ Any orchestrator Write to that path is a policy violation. See
 `AGENTS.md` § Phase gates for the concrete `Task(subagent_type="harness-analyst", ...)`
 call shape and the typed brief contract.
 
+**Empirical-claim validation (hard).** Any claim about a command's
+outcome — "X is the sole/only blocker", "`<build>` will pass once Y is
+gone", "all tests pass" — MUST be backed by running that command
+against the current baseline and reading its full output; never infer
+it from a single known issue. WHY: an unrun "sole blocker" claim baked
+into the analysis — and from there into the plan's acceptance headline
+— propagates to every downstream artifact and forces a costly
+correction cascade when execution reveals a second, pre-existing
+failure. If the baseline is not green, enumerate each pre-existing
+failure as an explicitly-scoped out-of-scope residual rather than
+asserting it away.
+
 Phase-2 gate: analysis doc exists at the path above, is indexed in `docs/README.md`,
 and open questions are explicit. Do not proceed to plan without this.
 
@@ -211,7 +223,12 @@ or paste a manual verdict before requesting approval. The critic runs
 at most twice on the same plan. After Run 2, the hook writes a
 `CAP_REACHED:` block instead of spawning codex; the lead must ship
 with residuals, scope-split, or escalate to re-analysis. See ADR
-pre-approval-critic-gate § Iteration cap. The
+pre-approval-critic-gate § Iteration cap. Because the cap leaves at
+most one retry, the **sweep-the-whole-class** rule (see § Phase 6 —
+Execution) applies with full force here: when Run 1 flags an instance
+of a recurring class, fix every occurrence across the plan and its
+sibling artifacts before the planner re-emits and triggers Run 2 —
+never burn the single remaining run on the cited line alone. The
 `HARNESS_CRITIC_FORCE="<reason>"` env var overrides the cap; use it
 only for re-dispatch under genuinely new scope. To bypass per
 contributor, remove the SubagentStop entry from
@@ -262,6 +279,20 @@ failure in the Decision Log, address it, and re-invoke the Evaluator.
 A failing Quality verdict is advisory only; route it to
 `docs/tech-debt-tracker.md` and continue.
 
+**Sweep the whole class before re-invoking (hard).** When the Evaluator
+— or the pre-approval critic — flags a finding that is an *instance of
+a recurring class* (a stale claim repeated across docs, a naming
+convention violated in several files, the same broken reference in
+multiple artifacts), sweep every shipped artifact for the whole class
+and fix all occurrences before re-invoking; do not fix only the cited
+line. WHY: the Evaluator and critic are expensive (each run is minutes
++ tokens), and fixing one instance at a time turns a single review into
+many round-trips. On the first finding, ask "one-off or pattern?" — if
+a pattern, `grep`/sweep the plan, analysis, tech-debt tracker, README
+catalog, and code for the class, fix them all, then re-invoke once.
+Pairs with the Phase-2 empirical-claim rule (don't bake an unverified
+claim in to begin with).
+
 On a passing transcript, the **agent** moves the plan file from
 `docs/exec-plans/active/` to `docs/exec-plans/completed/` and sets
 `status: completed` in the frontmatter. The agent then commits automatically — no prompt required. If the
@@ -269,6 +300,16 @@ On a passing transcript, the **agent** moves the plan file from
 write a Conventional Commit message, and run `git commit` directly.
 The agent owns closing the plan and the commit; the developer owns
 reviewing the result.
+
+**Batch close-out finalization.** While the plan still lives in
+`docs/exec-plans/active/` the orchestrator cannot edit it (the Phase-5
+pre-write gate), so every finalization edit — Progress checkboxes,
+Outcomes/Retrospective, acceptance-wording corrections — is a
+`harness-planner` round-trip. Batch all anticipated finalization edits
+into a SINGLE delegation rather than discovering them one Evaluator-run
+at a time. WHY: piecemeal delegation multiplies latency and token cost,
+and the close-out edits are usually knowable up front from the
+Evaluator transcript.
 
 The pre-commit hook validates this: it will reject any commit that
 touches source files unless a plan in `completed/` with

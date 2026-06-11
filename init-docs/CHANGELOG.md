@@ -21,6 +21,96 @@ the marker one entry at a time.
 
 ---
 
+## 2026-06-11.001 — Review-loop doctrine: empirical-claim validation, class-sweep before re-invoke, batched close-out
+
+**What:** Three doctrine rules added to `harness.md`. Phase 2 gains
+**Empirical-claim validation (hard)** — any claim about a command's
+outcome ("X is the sole blocker", "`<build>` will pass once Y is gone",
+"all tests pass") must be backed by running that command against the
+current baseline and reading its full output, never inferred from a
+single known issue; if the baseline is not green, each pre-existing
+failure is enumerated as an explicitly-scoped out-of-scope residual.
+Phase 6 gains **Sweep the whole class before re-invoking (hard)** —
+when the Evaluator or pre-approval critic flags an instance of a
+recurring class, sweep every shipped artifact and fix the whole class
+before re-invoking, rather than fixing the cited line and re-running.
+Phase 6 also gains **Batch close-out finalization** — because the
+Phase-5 pre-write gate forbids the orchestrator editing a plan still in
+`exec-plans/active/`, all anticipated finalization edits (Progress,
+Outcomes, acceptance-wording) are batched into a single
+`harness-planner` delegation instead of one per Evaluator-run. The
+Phase-5 pre-approval-critic paragraph cross-references the sweep rule,
+where the 2-run critic cap makes it especially load-bearing: a Run-1
+finding of a recurring class must be swept across the plan and sibling
+artifacts before the planner re-emits and triggers Run 2.
+`harness.md`'s `last_reviewed:` frontmatter is bumped to `2026-06-11`.
+
+**Why:** A real session of this harness baked an unverified
+"`make check` goes green for the first time" premise — premised on a
+single module being the sole blocker, never verified by running the
+suite — into a plan's acceptance headline. Execution surfaced a
+second, pre-existing failure; the false claim had already propagated to
+~7 artifacts and took 7 Completion-Evaluator rounds to scrub. The three
+rules are complementary: empirical-claim validation prevents baking the
+false claim in; class-sweep collapses the fix-loop when something slips
+through anyway; batched finalization cuts the planner round-trips during
+close-out. All trace to the same root cause and belong in the template
+so every repo ships with them.
+
+**Files touched:** `assets/harness.md`, `CHANGELOG.md`.
+
+**How to apply (idempotent, additive):**
+
+1. In the target repo's `docs/processes/harness.md` § Phase 2 —
+   Investigation, after the **Pre-write gate (hard).** paragraph and
+   before the `Phase-2 gate:` line, insert the
+   **Empirical-claim validation (hard).** paragraph from the asset.
+   Skip if the file already contains the literal string
+   `Empirical-claim validation`. **Stop with conflict report** if
+   `### Phase 2 — Investigation` is renamed or the `Phase-2 gate:`
+   anchor is absent.
+
+2. In § Phase 6 — Execution, after the paragraph that ends
+   `route it to \`docs/tech-debt-tracker.md\` and continue.`, insert
+   the **Sweep the whole class before re-invoking (hard).** paragraph
+   from the asset. Skip if the file already contains
+   `Sweep the whole class`. **Stop with conflict report** if the
+   Evaluator re-invoke paragraph is absent.
+
+3. In § Phase 6 — Execution, after the move-to-completed/commit
+   paragraph that ends `the developer owns reviewing the result.`,
+   insert the **Batch close-out finalization.** paragraph from the
+   asset. Skip if the file already contains
+   `Batch close-out finalization`. **Stop with conflict report** if the
+   move-then-commit paragraph is absent.
+
+4. In § Phase 5 — Plan, **Pre-approval critic (hard).** paragraph,
+   after the `See ADR pre-approval-critic-gate § Iteration cap.`
+   sentence, insert the sweep-the-whole-class cross-reference sentence
+   (`Because the cap leaves at most one retry …`) from the asset. Skip
+   if the paragraph already contains `sweep-the-whole-class`. **Stop
+   with conflict report** if the `§ Iteration cap.` anchor is absent
+   (the critic cap from `2026-05-31.001` has not yet been applied —
+   apply that entry first).
+
+5. Bump the `last_reviewed:` frontmatter key of
+   `docs/processes/harness.md` to `2026-06-11`. Skip if already
+   `2026-06-11` or later.
+
+6. Set `.harness-version` to `2026-06-11.001`.
+
+**Stack-specific notes:** None. Markdown doctrine only; no scripts,
+frontmatter, references, or new files. The rules use only harness
+vocabulary already present in the template (`harness-planner`,
+Evaluator, pre-approval critic, the Phase-5 pre-write gate).
+
+**Additive/replacing:** additive — three new paragraphs in an existing
+file.
+
+**Conflict risk:** low. The only surfaces are a target repo that has
+renamed `### Phase 2 — Investigation` or `### Phase 6 — Execution`, or
+removed one of the three anchor paragraphs the inserts attach to.
+
 ## 2026-05-28.002 — Ignore Python bytecode artifacts
 
 **What:** New scaffolds now ensure repo-root `.gitignore` ignores
