@@ -19,6 +19,18 @@
 !commit/**
 !changelog/
 !changelog/**
+!create-view/
+!create-view/**
+!di-map/
+!di-map/**
+!drawio/
+!drawio/**
+!go-tui/
+!go-tui/**
+!map-endpoint/
+!map-endpoint/**
+!method-diagram/
+!method-diagram/**
 
 # Generated Python bytecode
 **/__pycache__/
