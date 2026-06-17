@@ -1,6 +1,6 @@
 ---
 name: init-docs
-description: Initialize a harness-oriented documentation system for a project. Scaffolds `docs/` subfolders (architecture, analysis, decisions, processes, exec-plans, references, generated, tickets), a master catalog at `docs/README.md`, `docs/PLANS.md` as the ExecPlan spec, templates, a seeded `docs/processes/harness.md` operating manual, eight harness ADRs identified by slug, `dev-setup.md`, `tech-debt-tracker.md`, and repo-root anchors (`AGENTS.md`, `ARCHITECTURE.md`, `SECURITY.md`) encoding the operating principle, session bootstrap, and phase gates. Use this skill when the user invokes /init-docs, asks to "set up docs", "initialize documentation structure", "scaffold docs", "set up a harness", "add a harness for AI agents", or wants to bootstrap an AI-harness documentation system for a project. Accepts an optional domain description to adapt tag vocabulary; if omitted, scans the project to infer tags automatically.
+description: Initialize a harness-oriented documentation system for a project. Scaffolds `docs/` subfolders (architecture, analysis, decisions, processes, exec-plans, references, generated, tickets), a master catalog at `docs/README.md`, `docs/PLANS.md` as the ExecPlan spec, templates, a seeded `docs/processes/harness.md` operating manual, ten harness ADRs identified by slug, `dev-setup.md`, `tech-debt-tracker.md`, and repo-root anchors (`AGENTS.md`, `ARCHITECTURE.md`, `SECURITY.md`) encoding the operating principle, session bootstrap, and phase gates. Use this skill when the user invokes /init-docs, asks to "set up docs", "initialize documentation structure", "scaffold docs", "set up a harness", "add a harness for AI agents", or wants to bootstrap an AI-harness documentation system for a project. Accepts an optional domain description to adapt tag vocabulary; if omitted, scans the project to infer tags automatically.
 ---
 
 # init-docs
@@ -87,10 +87,11 @@ and directory the skill would write:
   `docs/processes/model-policy.md`,
   `docs/processes/initialization-checklist.md`,
   `docs/processes/cold-start-test.md`,
-  eight harness ADRs in `docs/decisions/` identified by slug:
+  ten harness ADRs in `docs/decisions/` identified by slug:
   `harness-design`, `session-exit`, `evaluator-gate`, `fleet-model-policy`,
   `hard-constraints`, `pre-approval-critic-gate`, `harness-validators`,
-  `adr-slug-canonical` (filenames are `<slug>.md` — see Step 13),
+  `adr-slug-canonical`, `generated-catalog-subindexes`,
+  `post-completion-amendment` (filenames are `<slug>.md` — see Step 13),
   `docs/references/README.md`,
   `docs/generated/README.md`.
 - Subagent configs: `.claude/agents/harness-analyst.md`,
@@ -103,8 +104,12 @@ and directory the skill would write:
 - Harness validators: `scripts/harness/check_harness_structure.py`,
   `scripts/harness/garbage_collect_docs.py`,
   `scripts/harness/sweep_adr_refs.py`,
+  `scripts/harness/generate_catalog_indexes.py`,
   `scripts/harness/_canonical_manifest.py` (tracked in git;
   stack-specific wiring deferred to `docs/processes/dev-setup.md`).
+- Generated catalog sub-indexes: `docs/analysis/README.md` and
+  `docs/exec-plans/completed/README.md` are produced by the generator
+  (run once at scaffold time, empty until artifacts exist).
 
 First, read `.harness-version` at the repo root if it exists. This
 determines the mode (see "Modes of operation" above). If the marker
@@ -299,7 +304,7 @@ initial state.
 
 ## Step 13 — Seed harness ADRs
 
-The harness ships eight ADRs identified by `id:` slug. Filenames are
+The harness ships ten ADRs identified by `id:` slug. Filenames are
 `<slug>.md` — no numeric prefix. See ADR adr-slug-canonical for the
 convention.
 
@@ -313,6 +318,8 @@ convention.
 | `pre-approval-critic-gate` | `assets/pre-approval-critic-gate.md` |
 | `harness-validators` | `assets/harness-validators.md` |
 | `adr-slug-canonical` | `assets/adr-slug-canonical.md` |
+| `generated-catalog-subindexes` | `assets/generated-catalog-subindexes.md` |
+| `post-completion-amendment` | `assets/post-completion-amendment.md` |
 
 ### Idempotency rule
 
@@ -497,11 +504,16 @@ Flag in the Step 18 report: "Covers: hook script tracked in
 
 Copy `assets/scripts/check_harness_structure.py`,
 `assets/scripts/garbage_collect_docs.py`,
-`assets/scripts/sweep_adr_refs.py`, and
+`assets/scripts/sweep_adr_refs.py`,
+`assets/scripts/generate_catalog_indexes.py`, and
 `assets/scripts/_canonical_manifest.py` to `scripts/harness/` in the
-project root. Create `scripts/harness/` if absent. `chmod +x` the three
+project root. Create `scripts/harness/` if absent. `chmod +x` the four
 CLI scripts (not `_canonical_manifest.py` — it is an importable
-module, not an executable).
+module, not an executable). Then run
+`python scripts/harness/generate_catalog_indexes.py` once so
+`docs/analysis/README.md` and `docs/exec-plans/completed/README.md`
+exist (empty until artifacts are added); wire its `--check` mode into
+pre-commit per `dev-setup.md`.
 
 **Tracked in git.** Every contributor gets the validators on
 checkout. The scripts are stdlib-only (Python ≥ 3.9) and self-contain

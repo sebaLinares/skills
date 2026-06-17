@@ -56,6 +56,13 @@ EXISTENCE_REQUIRED: list[str] = [
     "scripts/harness/garbage_collect_docs.py",
     "scripts/harness/_canonical_manifest.py",
     "scripts/harness/sweep_adr_refs.py",
+    # Catalog index generator (shipped 2026-06-16)
+    "scripts/harness/generate_catalog_indexes.py",
+    # Generated catalog sub-indexes (derived; see ADR
+    # generated-catalog-subindexes). Present on a fresh scaffold with
+    # zero entries; NOT in FRONTMATTER_REQUIRED (generated, header comment).
+    "docs/analysis/README.md",
+    "docs/exec-plans/completed/README.md",
     # Version marker
     ".harness-version",
 ]
@@ -76,6 +83,8 @@ ADR_SLUGS_REQUIRED: list[str] = [
     "pre-approval-critic-gate",
     "harness-validators",
     "adr-slug-canonical",
+    "generated-catalog-subindexes",
+    "post-completion-amendment",
 ]
 
 

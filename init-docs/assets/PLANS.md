@@ -33,7 +33,7 @@ plan-scoped decisions stay inline in the plan's Decision Log.
 
 Plan drafting follows the fleet model policy in
 `docs/processes/model-policy.md` — every plan is drafted by the
-`harness-planner` design subagent (Opus 4.7 xhigh) and passes through the
+`harness-planner` design subagent (version per model-policy) and passes through the
 pre-approval critic before the lead approves it. The default critic command
 is `codex:adversarial-review`; the hook invokes the underlying
 `codex-companion.mjs adversarial-review` script directly because the slash

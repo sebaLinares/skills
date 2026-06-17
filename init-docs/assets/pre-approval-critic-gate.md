@@ -50,7 +50,7 @@ reasonably ask "why do we always evaluate at completion but only sometimes
 critique at approval?" The clean answer is that we shouldn't.
 
 The cost lever was the original justification for the threshold — running
-Opus 4.7 xhigh synthesis plus GPT-5.5 high adversarial-review on every plan
+design-subagent synthesis plus checker-tier adversarial-review on every plan
 is more expensive than the orchestrator-only path. That cost is real but
 bounded: an ExecPlan is a low-frequency artifact (single-digit plans per week
 in a typical repo); the marginal cost is dominated by execution and CI, not
@@ -134,7 +134,7 @@ the lead must choose between:
 The cap exists because a critic that keeps finding *new* defect
 categories on each pass is signalling a scope problem, not a
 convergence opportunity. Each Run+revision pair costs one Opus
-synthesis plus one GPT-5.5 high adversarial-review plus the
+synthesis plus one checker-tier adversarial-review plus the
 orchestrator's token spend reading both; three rounds is roughly the
 same cost as planning three independent plans. Past two rounds the
 loop is anti-convergent on average.
@@ -147,7 +147,7 @@ scope under a different prompt. The reason is logged in the
 `CAP_REACHED` block for review.
 
 **No simple-tier exception.** Every ExecPlan flows through `harness-planner`
-on Opus 4.7 xhigh and through the critic on GPT-5.5 high via the codex
+on design-subagent and through the critic on checker-tier via the codex
 plugin (or the fallback chain). The `simple` and `complex` terms are
 removed from the harness vocabulary; the `module-count:` frontmatter field
 is dropped (it existed to make the threshold auditable; with no threshold,
@@ -172,7 +172,7 @@ transcript share a section-as-gate pattern that future contributors learn
 once and apply twice. The threshold ambiguity is gone; no plan can slip
 past the critic by being judged "simple."
 
-The cost consequence is one Opus 4.7 xhigh synthesis plus one GPT-5.5 high
+The cost consequence is one design-subagent synthesis plus one checker-tier
 critic pass per ExecPlan, with no opt-out. ExecPlans are low-frequency, so
 the absolute cost is bounded, but the change is monotonic — there is no
 fallback to "skip the expensive path." Cost telemetry feeds the steering

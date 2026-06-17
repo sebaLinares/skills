@@ -62,11 +62,11 @@ Every **Feature** row records where it came from — `brief`, `prd:<path>`, `ana
 
 **Orchestrator**:
 The agent owning the main session loop and continuity across phases. Default
-model: Sonnet 4.6 high. Delegates synthesis-heavy work to the design subagent
+model: the Orchestrator tier (version per model-policy). Delegates synthesis-heavy work to the design subagent
 and verification to checker commands.
 
 **Design subagent**:
-Opus 4.7 xhigh invoked from the orchestrator for the harness's design surfaces:
+The Design subagent tier (version per model-policy), invoked from the orchestrator for the harness's design surfaces:
 analysis-doc synthesis (phase 2), broad/irreversible ADRs (phase 4),
 ExecPlans (phase 5 — all plans, no complexity threshold). Receives a
 self-contained brief from the orchestrator; writes the artifact in place;
@@ -74,7 +74,7 @@ returns a one-paragraph summary. Reasoning is opaque to the orchestrator by
 design.
 
 **Checker / rescue tier**:
-GPT-5.5 high invoked via the codex plugin. Two roles share the tier because
+The Checker / rescue tier (version per model-policy), invoked via the codex plugin. Two roles share the tier because
 both require structural independence from the orchestrator: *checker*
 (Evaluator, pre-approval critic, diff sanity) reads and verdicts without
 writing code; *rescue* (`codex:codex-rescue` subagent) implements when the
@@ -89,7 +89,16 @@ through the `Agent` tool with `subagent_type="codex:codex-rescue"`. See
 Fleet-wide per-step model assignments at `docs/processes/model-policy.md`.
 Breaks the harness's prior model-agnosticism deliberately so that telemetry
 compounds across scaffolded repos. Enforced by reading order + steering loop,
-not by mechanical sensor.
+not by mechanical sensor. **Single-sourced**: concrete model version strings appear *only* in that
+file's role→model table;
+all other docs (harness.md, AGENTS.md, CONTEXT.md, the fleet-model-policy ADR)
+refer to the model **by role** ([[orchestrator]], [[design-subagent]],
+[[checker-rescue-tier]]) and never pin a version — that is what bred the
+four-file drift this rule fixes. The pinned version is load-bearing (telemetry
+consistency), so it cannot be made evergreen; staleness is surfaced by the
+existing `garbage_collect_docs.py` `stale-review` flag on this file's
+`last_reviewed`, and the steering loop reconciles it against the `claude-api`
+skill on that flag. No new sensor.
 
 **Hard constraint**:
 A repo-wide invariant that applies at every moment of every phase, distinct from a [[phase-gate]] (sequencing rule, fires only at transitions). Hard constraints sit in a `## Hard constraints (MUST / MUST NOT)` block immediately below `## Operating principle` in AGENTS.md, loud-labelled per item, each citing an ADR. Initial set (ADR 005): [[wip]]=1 on ExecPlans, no edits outside `covers:` during execution, no opportunistic refactor before verifier-green, no chat-only knowledge, no silent compliance with rule violations. The load-bearing motivation is the prose-equivalence problem — philosophical text and MUST NOTs look identical to a model without the loud label.
@@ -112,6 +121,29 @@ _Avoid_: "initialization checklist" as the verdict name — the checklist is the
 
 **Cold-start test**:
 A quarterly falsifier ritual that probes [[bootstrap-contract]] *legibility* (qualitative), not just operability (binary). Five questions — what is the system / how organised / how to run / how to verify / where are we now — answered in a NEW agent session using repo content only (Operating principle). Output is appended as a new top section to a single rolling log at `docs/generated/cold-start-test.md`, newest-first, one section per run with heading `## YYYY-MM-DD — Qn`. Drift across sections is a steering-loop input; a question the agent cannot answer means the repo is no longer the spec for that surface. Soft cadence: at least quarterly; sooner on major restructure, onboarding pain, or ADR supersession. Human-initiated, document-only ritual — no slash command, no automation, no mechanical coupling to other rituals (matches the same docs-only posture as Session exit).
+
+**Read-path partition**:
+The principle that fixing context rot in the harness is a *read-path* problem, not a *storage* problem. Historical artifacts are never deleted or moved out of reach (that fights the Operating principle and discards decision provenance); instead the harness keeps everything in the repo and indexed, but restructures so **session bootstrap** loads a thin index and historical detail is pulled only on demand. Observed failure that motivated it: a deployed instance's `docs/README.md` grew to ~39 paragraph-length **analysis** entries, append-only, read on every bootstrap.
+_Avoid_: "archival", "pruning", "garbage collection" (all imply removal; the fix retains).
+
+**Analysis sub-index**:
+A section-local index file at `docs/analysis/README.md`, parallel to the existing `references/README.md` and `generated/README.md` sub-indexes. Holds the per-analysis catalog rows that previously inlined into the master catalog; the master `docs/README.md` carries only a pointer. Removes the analysis pile from the bootstrap read-path. **Generated, not hand-maintained** — a stdlib script in `scripts/harness/` derives it from each analysis doc's frontmatter (`title`, `date`, a required one-line `summary:`, and `superseded-by:`), so it cannot rot into paragraph bloat and demotion is automatic from a [[supersession]] stamp. Therefore a derived artifact under the "don't hand-edit" convention. Resolves [[read-path-partition]] for the analysis section.
+
+**Amendment**:
+A post-completion correction to an **ExecPlan** that has already landed in `exec-plans/completed/`. Recorded in place via a dated row in the plan's [[history-table]]; the plan does **not** move back to `active/` and does not re-run the full gate chain (planner → pre-approval critic → Evaluator). Re-evaluation fires only when the amendment changes shipped behavior (code), not for doc-only corrections. Generalizes the recurring manual instruction "amend the wrong plan, don't spawn a new one" into a harness guide. "completed" is therefore *mutable*, not frozen.
+_Avoid_: "revision", "new plan" (a fresh plan is the thing amendment exists to avoid).
+
+**History table**:
+A per-artifact `## History` table (on ExecPlans, and optionally analysis docs) recording the ordered sequence of *semantic events* over the artifact's life — shipped, found-wrong-about-X, [[amendment|amended]], [[supersession|superseded]]. Bounded by construction (cannot outgrow its artifact), read in-context when the artifact is already loaded. Deliberately **not** a central ledger: git is the authoritative byte-level change log, and a hand-maintained central log would be a guide that rots and a multi-session write-hotspot. Captures what frontmatter cannot — event order — while frontmatter captures current state.
+_Avoid_: "changelog" (repo-level, Keep-a-Changelog), "central log" (rejected — that is git's job).
+
+**Supersession (`superseded-by:`)**:
+The relevance signal for [[read-path-partition]]. When a newer artifact replaces an older one, the older gets a `superseded-by: <path>` frontmatter pointer. This single line — not a date, not a log scan — is what a sensor or index-generator reads to demote the older entry (e.g. into the "superseded" group of the [[analysis-sub-index]]) and what a tag-loader reads to skip it. Current state is a frontmatter prop because sensors read it in O(1); event history is the [[history-table]] because readers consume it as narrative.
+_Avoid_: "deprecated" (overloaded with API/code lifecycle), "obsolete" (no pointer to the replacement).
+
+**Catalog generator**:
+The stdlib `scripts/harness/` script that derives the churny, append-only catalog sections from artifact frontmatter rather than hand-maintenance. Scope: the **analysis** sub-index and the **completed-plans** index only — ADRs, processes, architecture, references stay hand-curated (low churn, editorial blurbs worth keeping). Sync is enforced by a **pre-commit `--check`** that fails on drift (matching `check_harness_structure.py`'s fail-fast posture), not by mid-commit mutation. Net effect is a *reduction* in harness surface: it removes the Phase-2 "add a one-line catalog row" gate (the thing that bred 39-paragraph bloat) and turns **session exit**'s doc-coherence dimension from "manually index every artifact" into "run the generator." Implements [[analysis-sub-index]] and [[read-path-partition]].
+_Avoid_: "indexer" (too generic), "linter" (it generates, the `--check` only verifies).
 
 ## Relationships
 

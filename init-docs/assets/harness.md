@@ -101,7 +101,7 @@ list to the subagent.
 | Identify candidate paths | Orchestrator | `find` / `ls` / `grep -l` for files touched by the brief. **Do not Read them.** |
 | Construct typed brief | Orchestrator | Assemble `feature_id`, `slug`, `source_paths` per `harness-analyst` config. |
 | Synthesis | `harness-analyst` (Opus) | Reads `docs/analysis/_template.md` + `source_paths`. Writes the analysis doc directly. |
-| Catalog row | Orchestrator | Edit `docs/README.md` with the new doc's one-line entry and tags. |
+| Index | Orchestrator | Fill the analysis doc's `summary:` frontmatter (one line) and `superseded-by:` if it replaces an earlier analysis. The catalog generator derives `docs/analysis/README.md` from frontmatter — **do not hand-edit `docs/README.md`** (see ADR generated-catalog-subindexes). |
 
 The analysis doc contains:
 
@@ -133,7 +133,8 @@ failure. If the baseline is not green, enumerate each pre-existing
 failure as an explicitly-scoped out-of-scope residual rather than
 asserting it away.
 
-Phase-2 gate: analysis doc exists at the path above, is indexed in `docs/README.md`,
+Phase-2 gate: analysis doc exists at the path above, carries a one-line
+`summary:` frontmatter field (the generated analysis index derives from it),
 and open questions are explicit. Do not proceed to plan without this.
 
 ### Phase 3 — Findings review
@@ -199,7 +200,7 @@ section. See [ADR pre-approval-critic-gate](../decisions/pre-approval-critic-gat
 | Construct typed brief | Orchestrator | Assemble `feature_id`, `slug`, `covers`, `analysis_path` per `harness-planner` config. |
 | Synthesis | `harness-planner` (Opus) | Reads `docs/PLANS.md`, `docs/exec-plans/_template.md`, the analysis doc(s). Writes the ExecPlan directly. |
 | Critic pass | Hook (synchronous) | `harness-planner-critic-hook.mjs` invokes `codex-companion.mjs adversarial-review` on SubagentStop (slash command is user-only), writes verdict into `## Pre-approval critic transcript`. |
-| Catalog row | Orchestrator | Edit `docs/README.md` with the new plan's one-line entry and tags. |
+| Index | Orchestrator | Fill the plan's `summary:` frontmatter (optional). The completed-plans index is generated on completion — **do not hand-edit `docs/README.md`** (see ADR generated-catalog-subindexes). |
 
 **Pre-write gate (hard).** The orchestrator must never Write or Edit a
 file under `docs/exec-plans/active/`. That path belongs to
@@ -357,14 +358,14 @@ the assignments most likely to affect phase gates.
 
 | Step | Tier | Command |
 |---|---|---|
-| Default orchestration | Sonnet 4.6 high | Main session |
-| Phase 2 analysis synthesis | Opus 4.7 xhigh | Claude Task tool |
-| Phase 4 broad or irreversible ADRs | Opus 4.7 xhigh | Claude Task tool |
-| Phase 5 ExecPlans (all plans) | Opus 4.7 xhigh | Claude Task tool |
-| Pre-approval critic | GPT-5.5 high via codex plugin | Auto-fired by `.claude/hooks/harness-planner-critic-hook.mjs` → `codex-companion.mjs adversarial-review` |
-| Mid-execution diff sanity | GPT-5.5 high via codex plugin | `Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" review)` |
-| Rescue implementation | GPT-5.5 high via codex plugin | `Agent(subagent_type="codex:codex-rescue", …)` |
-| Completion Evaluator | GPT-5.5 high via codex plugin | `Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" adversarial-review --base <merge-base>)` |
+| Default orchestration | Orchestrator | Main session |
+| Phase 2 analysis synthesis | Design subagent | Claude Task tool |
+| Phase 4 broad or irreversible ADRs | Design subagent | Claude Task tool |
+| Phase 5 ExecPlans (all plans) | Design subagent | Claude Task tool |
+| Pre-approval critic | Checker / rescue | Auto-fired by `.claude/hooks/harness-planner-critic-hook.mjs` → `codex-companion.mjs adversarial-review` |
+| Mid-execution diff sanity | Checker / rescue | `Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" review)` |
+| Rescue implementation | Checker / rescue | `Agent(subagent_type="codex:codex-rescue", …)` |
+| Completion Evaluator | Checker / rescue | `Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" adversarial-review --base <merge-base>)` |
 
 If the codex plugin is unavailable, follow the fallback chain in
 `docs/processes/model-policy.md`; do not silently treat the main session as an
@@ -407,9 +408,13 @@ The checklist has six dimensions:
    reflecting reality. If a step is partially done, split it into done and
    remaining items. Auto-fix by editing the plan. Ambiguous progress is
    surfaced.
-4. **Doc coherence** — Every new or edited artifact is indexed in
-   `docs/README.md` with tags, and no docs are orphaned. Auto-fix missing
-   catalog entries. Ambiguous tag choices are surfaced.
+4. **Doc coherence** — Every new or edited analysis doc / plan carries its
+   `summary:` (and `superseded-by:` where applicable) frontmatter; then run
+   `python scripts/harness/generate_catalog_indexes.py` so the generated
+   analysis and completed-plan indexes match. Hand-curated catalog sections
+   (ADRs, processes) still get a one-line `docs/README.md` entry with tags.
+   No docs orphaned. Auto-fix by stamping frontmatter + regenerating; ambiguous
+   tag choices are surfaced. See ADR generated-catalog-subindexes.
 5. **Startup viable** — If startup-affecting code was touched, confirm the
    startup commands described in `docs/processes/dev-setup.md` still bring the
    project up. Auto-fix stale command text when the correct command is known.
@@ -462,8 +467,11 @@ Example transcript:
 | External references | `docs/references/` | `<name>-llms.txt` |
 | AI-generated ticket drafts | `docs/tickets/` | `YYYY-MM-DD_<ID>_<slug>.md` |
 
-After creating any doc, add a one-line entry to the relevant section of
-`docs/README.md` with at least one domain tag and one type tag.
+For **analysis docs and completed plans**, do not hand-edit `docs/README.md`:
+fill the artifact's `summary:` (and `superseded-by:`) frontmatter and run the
+catalog generator (see ADR generated-catalog-subindexes). For all other doc
+types, add a one-line entry to the relevant `docs/README.md` section with at
+least one domain tag and one type tag.
 
 Templates for analysis and plan files live next to where they belong:
 `docs/analysis/_template.md` and `docs/exec-plans/_template.md`. Copy and fill.
@@ -528,7 +536,7 @@ ships in v1" list or by writing a superseding ADR.
 
 ### Harness validators
 
-Two stdlib-Python scripts ship at `scripts/harness/` to mechanically
+Three stdlib-Python scripts ship at `scripts/harness/` to mechanically
 enforce the documentation contract:
 
 - `check_harness_structure.py` — existence of canonical files, 4-key
@@ -538,6 +546,10 @@ enforce the documentation contract:
 - `garbage_collect_docs.py` — broken-reference scan, stale-review
   flag, orphan-doc detection. Slower; suitable for nightly or weekly
   runs. Renders a markdown report.
+- `generate_catalog_indexes.py` — derives the analysis and completed-plan
+  catalog sub-indexes from artifact frontmatter. Run it after adding or
+  amending those artifacts; its `--check` mode (fail on drift) is suitable
+  for pre-commit. See [ADR generated-catalog-subindexes](../decisions/generated-catalog-subindexes.md).
 
 Both honour `HARNESS_BYPASS="<reason>"`. The shared manifest lives at
 `scripts/harness/_canonical_manifest.py` — every CHANGELOG entry that

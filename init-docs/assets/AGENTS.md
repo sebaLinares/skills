@@ -78,8 +78,9 @@ hard-label clothing, which is worse than no rule at all (see
   section". This is the worker/checker split applied to plan
   completion.
 - Phase 2 synthesis, phase 4 broad/irreversible ADRs, and every
-  phase 5 ExecPlan invoke a typed design subagent (Opus 4.7 xhigh)
-  per [model policy](docs/processes/model-policy.md).
+  phase 5 ExecPlan invoke a typed design subagent (the **design
+  subagent** tier; version per
+  [model policy](docs/processes/model-policy.md) — the single source).
   Phase 2 → `harness-analyst`. Phase 5 → `harness-planner` (all
   plans; no complexity threshold — see
   [ADR pre-approval-critic-gate](docs/decisions/pre-approval-critic-gate.md)). Phase 4

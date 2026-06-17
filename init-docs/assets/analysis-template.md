@@ -2,6 +2,8 @@
 status: draft
 date: YYYY-MM-DD
 topic: <short-name>
+summary: <one line; what this analysis found — feeds the generated analysis index>
+superseded-by:  # repo-relative path to the analysis that replaces this one; leave blank while current
 related-plan: <repo-relative path or "none yet">
 related-adrs: []
 ---

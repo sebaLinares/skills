@@ -2,7 +2,7 @@
 id: fleet-model-policy
 owner: {{REPO_NAME}}
 status: accepted
-last_reviewed: 2026-05-28
+last_reviewed: 2026-06-16
 update_trigger: on-supersession
 ---
 
@@ -18,27 +18,29 @@ The harness already treats load-bearing context as repo content: if it is not
 in the repo, it does not exist. Model choice is also load-bearing context. When
 it lives only in chat, failures cannot be compared across repos because each
 session may have used a different implicit assignment. Naming models in the
-scaffold makes telemetry compound: "Opus drafted the ADR" or "GPT-5.5 checked
+scaffold makes telemetry compound: "the design subagent drafted the ADR" or "the checker checked
 the plan" means the same thing in every repo.
 
 The assignments deliberately keep stack-agnosticism while ending
-model-agnosticism. Sonnet 4.6 high carries the ordinary workflow cheaply as the
-orchestrator. Opus 4.7 xhigh is reserved for design surfaces where synthesis
-quality matters: phase-2 analysis synthesis, phase-4 broad or irreversible
-ADRs, and phase-5 complex or multi-module ExecPlans. GPT-5.5 high via the
-codex plugin satisfies structural independence for checker and rescue work by
-being a different model family, not merely a new context window.
+model-agnosticism. The **orchestrator** tier carries the ordinary workflow
+cheaply. The **design subagent** tier is reserved for design surfaces where
+synthesis quality matters: phase-2 analysis synthesis, phase-4 broad or
+irreversible ADRs, and phase-5 complex or multi-module ExecPlans. The
+**checker / rescue** tier satisfies structural independence for checker and
+rescue work by being a different model family, not merely a new context window.
+Concrete version strings for each tier live only in
+`docs/processes/model-policy.md` — this ADR names roles so it does not date.
 
 ## Decision
 
-The harness adopts a three-tier fleet:
+The harness adopts a three-tier fleet — **Orchestrator**, **Design subagent**,
+and **Checker / rescue** (a different model family for structural independence).
 
-- Orchestrator: Sonnet 4.6 high.
-- Design subagent: Opus 4.7 xhigh.
-- Checker / rescue: GPT-5.5 high via the codex plugin.
-
-The single source of truth for per-step assignment is
-`docs/processes/model-policy.md`. The default Evaluator command resolves to
+`docs/processes/model-policy.md` is the **single source of truth for both the
+per-step assignment and the concrete model version string of each tier**. No
+other harness doc pins a version; all refer to a tier by role. This contains
+version drift to one file — the prior practice of restating versions in
+harness.md, AGENTS.md, and CONTEXT.md let three copies silently age. The default Evaluator command resolves to
 `codex-companion.mjs adversarial-review --base <merge-base>`, invoked by the
 orchestrator via Bash — the `/codex:adversarial-review` slash command sets
 `disable-model-invocation: true` and cannot be reached from inside an agent

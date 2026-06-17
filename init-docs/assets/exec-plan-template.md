@@ -3,6 +3,7 @@ status: draft
 date: YYYY-MM-DD
 id: <jira-id-or-initiative-code>
 slug: <short-slug>
+summary: <optional one line; enriches the generated completed-plans index>
 analysis: <repo-relative path to the analysis doc that produced this plan>
 adrs: []
 covers: []  # repo-relative path prefixes; required when status: approved
@@ -56,6 +57,22 @@ go to `docs/decisions/` as ADRs, not here.
 Written at major milestones and at completion. What was achieved, what
 remains, lessons learned. Compare the result against Purpose. Capture any
 lesson that should feed the harness steering loop.
+
+## History
+
+Ordered semantic events over this plan's life — newest last. Git holds the
+byte-level change log; this section holds the *narrative* a future reader needs
+in-context. Required when the plan is amended after completion.
+
+A **post-completion amendment** (the plan shipped, then was found wrong about
+something) is recorded here as a dated row; the plan stays in `completed/` and
+does **not** re-enter `active/` or re-run the planner/critic/Evaluator chain.
+Re-run the Evaluator only if the amendment changes shipped behaviour (code), not
+for a doc-only correction. See ADR post-completion-amendment.
+
+| Date | Event | Detail |
+|---|---|---|
+| YYYY-MM-DD | shipped | moved to `completed/` after Evaluator pass |
 
 ## Context and Orientation
 

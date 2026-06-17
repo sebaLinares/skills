@@ -52,9 +52,13 @@ System internals: request flows, data transformations, API contracts, diagrams. 
 *(none yet)*
 
 ## Analysis
-Point-in-time research, gap reports, investigations. Dated — may be superseded by newer entries.
+Point-in-time research, gap reports, investigations. **Not inlined here** — the
+per-doc rows live in a generated index so this catalog stays thin at bootstrap.
+Demotion is automatic from each doc's `superseded-by:` frontmatter. See
+[ADR generated-catalog-subindexes](decisions/generated-catalog-subindexes.md).
 
-- [Analysis template](analysis/_template.md) — copy, fill, commit `#ai-harness` `#guideline`
+- [Analysis index](analysis/README.md) — generated from `docs/analysis/*.md` frontmatter; newest first, current vs superseded `#ai-harness` `#guideline`
+- [Analysis template](analysis/_template.md) — copy, fill (incl. `summary:`), commit `#ai-harness` `#guideline`
 
 ## Decisions
 Architecture Decision Records (ADRs). Explain *why* the system is the way it is.
@@ -68,21 +72,23 @@ convention.
 - [ADR harness-design — Harness Engineering for AI Agent Usage](decisions/harness-design.md) — guides + sensors, phase gates, plans as first-class artifacts `#ai-harness` `#adr`
 - [ADR session-exit — Session exit closes the bootstrap asymmetry](decisions/session-exit.md) — explicit session close-out checklist and chat-sweep routing `#ai-harness` `#adr`
 - [ADR evaluator-gate — Evaluator gate at plan completion](decisions/evaluator-gate.md) — independent evaluator pass before `active/` → `completed/`; worker/checker split for plan closure `#ai-harness` `#adr`
-- [ADR fleet-model-policy — Fleet model policy](decisions/fleet-model-policy.md) — named models per harness step; Sonnet orchestrator, Opus design subagent, GPT-5.5 checker via codex plugin `#ai-harness` `#adr`
+- [ADR fleet-model-policy — Fleet model policy](decisions/fleet-model-policy.md) — named models per harness step by role (orchestrator / design subagent / checker); versions in model-policy `#ai-harness` `#adr`
 - [ADR hard-constraints — Hard constraints as a separate category from phase gates](decisions/hard-constraints.md) — `## Hard constraints (MUST / MUST NOT)` section in `AGENTS.md`, distinct from phase gates `#ai-harness` `#adr`
 - [ADR pre-approval-critic-gate — Pre-approval critic gate](decisions/pre-approval-critic-gate.md) — unconditional pre-approval critic pass; simple/complex threshold removed; pre-approval critic transcript artifact `#ai-harness` `#adr`
 - [ADR harness-validators — Harness validators](decisions/harness-validators.md) — stdlib Python structure check + doc garbage collector at `scripts/harness/`; stack-agnostic wiring `#ai-harness` `#adr`
 - [ADR adr-slug-canonical — ADR slugs as the canonical identifier](decisions/adr-slug-canonical.md) — slug-only filenames, slug-only URLs and prose refs; no numeric ADR identity anywhere `#ai-harness` `#adr`
+- [ADR generated-catalog-subindexes — Churny catalog sections are generated](decisions/generated-catalog-subindexes.md) — analysis + completed-plan indexes derived from frontmatter; removes the Phase-2 catalog-row gate; `superseded-by:` drives demotion `#ai-harness` `#adr`
+- [ADR post-completion-amendment — Completed plans are mutable](decisions/post-completion-amendment.md) — amend in place via `## History`, no re-entry to `active/`; per-artifact history not a central log (git is the change log) `#ai-harness` `#adr`
 
 ## Exec plans
 Active and completed initiative plans. First-class artifacts — reviewed before any code is written. Plan-scoped decisions live inline; architectural decisions escalate to ADRs.
 
 - [PLANS.md — ExecPlan specification](PLANS.md) — contract for what a plan must be, required sections, living-document discipline `#ai-harness` `#plan` `#guideline`
-- `exec-plans/active/` — plans currently in flight
-- `exec-plans/completed/` — done, retained for historical context
+- `exec-plans/active/` — plans currently in flight (scanned directly at bootstrap; WIP=1)
+- [Completed plans index](exec-plans/completed/README.md) — generated from `docs/exec-plans/completed/*.md` frontmatter; newest first. Plans are mutable via amendment (ADR post-completion-amendment) `#ai-harness` `#plan`
 - [Plan template](exec-plans/_template.md) — copy, fill, commit to `active/` `#ai-harness` `#plan`
 
-*(no active or completed plans yet)*
+*(no active plans yet)*
 
 ## Processes
 How-we-work: guidelines, conventions, runbooks.

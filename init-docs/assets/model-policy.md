@@ -1,7 +1,7 @@
 ---
 owner: {{REPO_NAME}}
 status: stable
-last_reviewed: 2026-05-26
+last_reviewed: 2026-06-16
 update_trigger: on-fleet-policy-change
 ---
 
@@ -11,12 +11,21 @@ This policy is fleet-wide and not project-configurable. It names the model
 assignments for the harness so that failures and improvements can be compared
 across scaffolded repos. ADR fleet-model-policy records the rationale.
 
+**This file is the single source of truth for concrete model version strings.**
+No other doc (harness.md, AGENTS.md, CONTEXT.md, ADRs) may pin a version — they
+refer to a model **by role** (Orchestrator / Design subagent / Checker-rescue)
+so a model bump touches one table, not four. The pinned version is load-bearing
+(telemetry consistency), so it cannot be evergreen; staleness surfaces via
+`garbage_collect_docs.py`'s `stale-review` flag on this file's `last_reviewed`,
+and the steering loop reconciles the lineup against the `claude-api` skill on
+that flag.
+
 ## Tiers
 
 | Tier | Current model | Role |
 |---|---|---|
 | Orchestrator | Sonnet 4.6 high | Owns the main session loop, repo continuity, artifact routing, and ordinary edits. |
-| Design subagent | Opus 4.7 xhigh | Handles synthesis-heavy design surfaces where marginal reasoning capability matters. |
+| Design subagent | Opus 4.8 xhigh | Handles synthesis-heavy design surfaces where marginal reasoning capability matters. |
 | Checker / rescue | GPT-5.5 high via codex plugin | Provides structurally independent review, verification, rescue, and async result harvest. |
 
 ## Per-step assignments
@@ -32,11 +41,11 @@ across scaffolded repos. ADR fleet-model-policy records the rationale.
 | 7 | Harness-version check | Orchestrator | Main session | Compare `.harness-version` with the init-docs changelog head. |
 | 8 | Phase 1 brief capture | Orchestrator | Main session | Restate the brief and ensure Feature coverage. |
 | 9 | Phase 2 investigation | Orchestrator | Main session | Gather code and doc context for the analysis doc. |
-| 10 | Phase 2 synthesis | Design subagent | Claude Task tool, Opus 4.7 xhigh | Synthesize the analysis doc from a self-contained brief. |
+| 10 | Phase 2 synthesis | Design subagent | Claude Task tool, Opus 4.8 xhigh | Synthesize the analysis doc from a self-contained brief. |
 | 11 | Phase 3 findings review | Orchestrator | Main session | Apply lead feedback and resolve or defer open questions. |
 | 12 | Phase 4 scoped decisions | Orchestrator | Main session | Record plan-local decisions inline. |
-| 13 | Phase 4 broad or irreversible ADRs | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft ADRs with cross-plan or hard-to-reverse scope. |
-| 14 | Phase 5 ExecPlan | Design subagent | Claude Task tool, Opus 4.7 xhigh | Draft every ExecPlan. No complexity threshold — see ADR pre-approval-critic-gate. |
+| 13 | Phase 4 broad or irreversible ADRs | Design subagent | Claude Task tool, Opus 4.8 xhigh | Draft ADRs with cross-plan or hard-to-reverse scope. |
+| 14 | Phase 5 ExecPlan | Design subagent | Claude Task tool, Opus 4.8 xhigh | Draft every ExecPlan. No complexity threshold — see ADR pre-approval-critic-gate. |
 | 15 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review every draft plan before lead approval. **Auto-invoked synchronously** by `.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner` SubagentStop; the hook writes the verdict into the plan's `## Pre-approval critic transcript` section. Failure modes (plugin missing, codex crash) write a `BLOCKED: <reason>` placeholder in the same section. See ADR pre-approval-critic-gate. |
 | 16 | Phase 6 execution | Orchestrator | Main session | Execute approved plan steps and update progress. |
 | 17 | Mid-execution diff sanity | Checker / rescue | `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" review` | Request when the diff grows broad, risky, or surprising. The `/codex:review` slash command sets `disable-model-invocation: true`, so the orchestrator invokes the underlying companion script via Bash. |

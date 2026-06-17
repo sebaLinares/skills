@@ -21,6 +21,76 @@ the marker one entry at a time.
 
 ---
 
+## 2026-06-16.001 — Generated catalog sub-indexes + post-completion amendment + model-version single-sourcing
+
+**What:** Three changes addressing catalog read-path rot (#1) and pinned
+model-version drift (#5), found by auditing a ~2-month deployed instance whose
+`docs/README.md` Analysis section had grown to ~39 paragraph entries read on
+every bootstrap.
+
+1. **Generated catalog sub-indexes.** A new stdlib script
+   `scripts/harness/generate_catalog_indexes.py` derives
+   `docs/analysis/README.md` and `docs/exec-plans/completed/README.md` from
+   artifact frontmatter. Analysis docs gain a required one-line `summary:` and
+   an optional `superseded-by:` pointer; the latter demotes a row into a
+   "Superseded" group on regeneration. The master `docs/README.md` carries only
+   pointers. The Phase-2 "add a one-line catalog row" gate is replaced by
+   "fill `summary:` frontmatter"; session-exit doc-coherence becomes "run the
+   generator". Sync is enforced by the script's `--check` mode (fail on drift)
+   in pre-commit. New ADR `generated-catalog-subindexes`.
+
+2. **Post-completion amendment.** Completed plans are mutable: a correction is
+   recorded in a new `## History` table in the plan (added to the exec-plan
+   template); the plan stays in `completed/` and does not re-run the
+   planner/critic/Evaluator chain unless the amendment changes shipped
+   behaviour. No central activity log — git is the change log, frontmatter is
+   current state, `## History` is the per-artifact event narrative. New ADR
+   `post-completion-amendment`.
+
+3. **Model-version single-sourcing.** Concrete version strings live only in
+   `docs/processes/model-policy.md`; harness.md, AGENTS.md, CONTEXT.md, and the
+   `fleet-model-policy` ADR now refer to a model by role (Orchestrator / Design
+   subagent / Checker-rescue). The canonical Opus tier is bumped 4.7 → 4.8.
+   Staleness reuses the existing `garbage_collect_docs.py` `stale-review` flag;
+   no new sensor.
+
+Manifest updated in this entry: `ADR_SLUGS_REQUIRED` gains
+`generated-catalog-subindexes` and `post-completion-amendment`;
+`EXISTENCE_REQUIRED` gains `generate_catalog_indexes.py`,
+`docs/analysis/README.md`, and `docs/exec-plans/completed/README.md`.
+
+**Why:** A hand-maintained catalog row is a guide that demonstrably rotted
+(paragraph bloat, never demoted); deriving it from frontmatter converts the
+guide into a sensor and shrinks the bootstrap read-path. Four copies of each
+model version silently aged; single-sourcing contains drift to one file. The
+amendment workflow was a recurring manual instruction — by the steering-loop's
+own rule, a missing guide.
+
+**How to apply (idempotent, stack-neutral):**
+1. If absent, add `scripts/harness/generate_catalog_indexes.py` (copy from the
+   skill assets). Run it once so the two generated index files exist.
+2. Add `generated-catalog-subindexes.md` and `post-completion-amendment.md` to
+   `docs/decisions/` if their slugs are not already resolvable.
+3. In the analysis template, add `summary:` (required) and `superseded-by:`
+   (optional) frontmatter keys if missing. In the exec-plan template, add a
+   `## History` section if missing.
+4. In `docs/README.md`, replace the inlined Analysis section and the
+   completed-plans pointer with pointers to the generated indexes (only if the
+   section still inlines per-doc rows).
+5. Remove pinned model version strings from harness.md / AGENTS.md / CONTEXT.md
+   / `fleet-model-policy.md`, replacing each with its role; ensure the version
+   appears in `docs/processes/model-policy.md` and bump `last_reviewed`.
+6. Wire `generate_catalog_indexes.py --check` into the documented pre-commit
+   contract (`dev-setup.md` § Harness validators).
+7. **Migration of existing analysis docs:** backfill a one-line `summary:` on
+   each legacy analysis doc and stamp `superseded-by:` where a later doc
+   replaced it, then regenerate. The generator marks missing summaries
+   `(no summary)` so the backlog is self-listing.
+
+**Stack-specific notes (example-only):** pre-commit wiring is stack-specific;
+e.g. a Makefile target `docs-index: python scripts/harness/generate_catalog_indexes.py`
+plus a `--check` step in the commit hook.
+
 ## 2026-06-11.001 — Review-loop doctrine: empirical-claim validation, class-sweep before re-invoke, batched close-out
 
 **What:** Three doctrine rules added to `harness.md`. Phase 2 gains
