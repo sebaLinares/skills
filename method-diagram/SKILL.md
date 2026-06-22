@@ -1,6 +1,14 @@
 ---
 name: method-diagram
-description: Use when the user invokes /method-diagram, asks to "diagram", "draw a flowchart for", or "document" a method or set of methods in the codebase, provides a view YAML path (e.g. docs/views/*.yaml), or references a ClassName.method. Generates a native draw.io flowchart showing internal logic and control flow. Two modes — view-driven: reads a view YAML to scope which methods to include and produces an inline-expansion swimlane flowchart; method-driven: reads one method directly from source and produces a single-method flowchart. Output is a .drawio file saved to docs/architecture/.
+description: >-
+  Use when the user invokes /method-diagram, asks to "diagram", "draw a
+  flowchart for", or "document" a method or set of methods in the codebase,
+  provides a view YAML path (e.g. docs/views/*.yaml), or references a
+  ClassName.method. Generates a native draw.io flowchart showing internal logic
+  and control flow. Two modes - view-driven: reads a view YAML to scope which
+  methods to include and produces an inline-expansion swimlane flowchart;
+  method-driven: reads one method directly from source and produces a
+  single-method flowchart. Output is a .drawio file saved to docs/architecture/.
 ---
 
 # method-diagram

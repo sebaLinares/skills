@@ -1,3 +1,10 @@
+---
+name: go-tui
+description: >-
+  Patterns for building Go CLI tools using Cobra, Bubble Tea TUI apps, lipgloss
+  styling, cmd/internal project structure, or bubbletea/bubbles imports.
+---
+
 # Go CLI/TUI Development Patterns
 
 **Version:** 1.0.0

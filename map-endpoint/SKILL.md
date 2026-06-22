@@ -1,6 +1,12 @@
 ---
 name: map-endpoint
-description: Trace one HTTP endpoint's full call chain and produce a formatted entry for docs/architecture/call-chains/<module>.md. Use this skill when the user invokes /map-endpoint, asks to "map", "trace", or "document" an endpoint or controller method, or wants to generate or commit a call-chain-graph entry. Two modes: generate (default, parallelizable, no file writes) and write (persist confirmed entries to graph files).
+description: >-
+  Trace one HTTP endpoint's full call chain and produce a formatted entry for
+  docs/architecture/call-chains/<module>.md. Use this skill when the user invokes
+  /map-endpoint, asks to "map", "trace", or "document" an endpoint or controller
+  method, or wants to generate or commit a call-chain-graph entry. Two modes:
+  generate (default, parallelizable, no file writes) and write (persist confirmed
+  entries to graph files).
 ---
 
 # map-endpoint
