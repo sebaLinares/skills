@@ -1,7 +1,7 @@
 ---
 owner: {{REPO_NAME}}
 status: stable
-last_reviewed: 2026-06-11
+last_reviewed: 2026-07-02
 update_trigger: on-harness-change
 ---
 
@@ -363,9 +363,9 @@ the assignments most likely to affect phase gates.
 | Phase 4 broad or irreversible ADRs | Design subagent | Claude Task tool |
 | Phase 5 ExecPlans (all plans) | Design subagent | Claude Task tool |
 | Pre-approval critic | Checker / rescue | Auto-fired by `.claude/hooks/harness-planner-critic-hook.mjs` → `codex-companion.mjs adversarial-review` |
-| Mid-execution diff sanity | Checker / rescue | `Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" review)` |
+| Mid-execution diff sanity | Checker / rescue | `Bash(node "$(find ~/.claude/plugins -name codex-companion.mjs -type f 2>/dev/null | head -1)" review)` |
 | Rescue implementation | Checker / rescue | `Agent(subagent_type="codex:codex-rescue", …)` |
-| Completion Evaluator | Checker / rescue | `Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" adversarial-review --base <merge-base>)` |
+| Completion Evaluator | Checker / rescue | `Bash(node "$(find ~/.claude/plugins -name codex-companion.mjs -type f 2>/dev/null | head -1)" adversarial-review --base <merge-base>)` |
 
 If the codex plugin is unavailable, follow the fallback chain in
 `docs/processes/model-policy.md`; do not silently treat the main session as an

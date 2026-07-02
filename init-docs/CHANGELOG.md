@@ -21,6 +21,68 @@ the marker one entry at a time.
 
 ---
 
+## 2026-07-02.001 — Correct the CLAUDE_PLUGIN_ROOT assumption in codex dispatch commands
+
+**What:** The checker-dispatch command templates asserted that
+`CLAUDE_PLUGIN_ROOT` resolves to the codex plugin directory in orchestrator
+Bash calls. It does not. Claude Code injects `CLAUDE_PLUGIN_ROOT` only inside a
+plugin's own hook or slash-command execution context; in an ordinary
+orchestrator Bash tool call the variable is empty, even when codex-plugin-cc is
+installed and the script physically exists. Because the codex review slash
+commands are user-only (`disable-model-invocation: true`), the orchestrator
+always reaches `codex-companion.mjs` through an ad-hoc Bash call — precisely the
+path where the variable is unset — so every `${CLAUDE_PLUGIN_ROOT}`-templated
+command resolved to a broken path (`node "/scripts/codex-companion.mjs"`).
+
+Every dispatch template now locates the script with the same discovery shim the
+pre-approval critic hook already uses (`harness-planner-critic-hook.mjs` →
+`findCompanion`):
+
+    node "$(find ~/.claude/plugins -name codex-companion.mjs -type f 2>/dev/null | head -1)" <subcommand>
+
+Files corrected:
+- `model-policy.md` — per-step commands (Steps 17/19/20) and the "Codex
+  commands reference" paragraph, which previously claimed "orchestrator Bash
+  calls have the variable available."
+- `dev-setup.md` — the `evaluator-cmd:` template and the "Tool resolution"
+  paragraph, which previously claimed "`CLAUDE_PLUGIN_ROOT` is populated in any
+  orchestrator Bash call when codex-plugin-cc is installed."
+- `harness.md` — the model-summary table's Mid-execution-diff and
+  Completion-Evaluator command cells.
+
+The other files that mention the dispatch (`evaluator-gate.md`,
+`pre-approval-critic-gate.md`, `AGENTS.md`, and the prose rows of `harness.md`)
+already used the abbreviated `codex-companion.mjs <subcommand>` form with no
+hardcoded variable and needed no change. `harness-planner-critic-hook.mjs` was
+already correct and is the reference implementation. `last_reviewed` bumped to
+`2026-07-02` on the three edited process docs.
+
+**Why:** A live session surfaced the bug: `echo $CLAUDE_PLUGIN_ROOT` returned
+empty in an orchestrator Bash call on a machine where the plugin was installed
+and `codex-companion.mjs` was present, and a consuming repo's
+`settings.local.json` had been forced to allowlist the resolved absolute path
+rather than the templated form — a second, independent data point. The hook
+already distrusted the variable; the orchestrator docs contradicted the hook.
+Unifying both on the `find ~/.claude/plugins` shim removes the contradiction and
+makes a single `settings.local.json` allowlist entry cover every invocation.
+
+**How to apply (idempotent, stack-neutral):**
+1. In every documented checker/Evaluator dispatch command, if it interpolates
+   `${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs`, replace that path with
+   `$(find ~/.claude/plugins -name codex-companion.mjs -type f 2>/dev/null | head -1)`.
+   Leave the subcommand and its arguments unchanged. Skip if already migrated.
+2. In any prose that states `CLAUDE_PLUGIN_ROOT` is populated in orchestrator
+   Bash calls, correct it: the variable is set only inside a plugin's own
+   hook/slash-command context, so the orchestrator locates the script by
+   searching `~/.claude/plugins`, matching the pre-approval critic hook's
+   `findCompanion`.
+3. If a consuming repo's `.claude/settings.local.json` allowlists the codex
+   companion by resolved absolute path, it may replace that entry with the
+   canonical `find`-shim command form; existing absolute-path entries keep
+   working and need not be removed.
+4. Bump `last_reviewed` on any process doc whose dispatch command or prose
+   changed.
+
 ## 2026-06-16.001 — Generated catalog sub-indexes + post-completion amendment + model-version single-sourcing
 
 **What:** Three changes addressing catalog read-path rot (#1) and pinned

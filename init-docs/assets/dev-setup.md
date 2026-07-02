@@ -1,7 +1,7 @@
 ---
 owner: {{REPO_NAME}}
 status: living
-last_reviewed: 2026-05-26
+last_reviewed: 2026-07-02
 update_trigger: on-toolchain-change
 ---
 
@@ -168,7 +168,7 @@ Fleet default per `docs/processes/model-policy.md`. Override only if
 
     <evaluator-cmd> <plan-path>
 
-    evaluator-cmd: node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" adversarial-review --base <merge-base>
+    evaluator-cmd: node "$(find ~/.claude/plugins -name codex-companion.mjs -type f 2>/dev/null | head -1)" adversarial-review --base <merge-base>
     # Focus text template:
     #   "Adversarial verification of completion. Challenge the worker's
     #   claim that the diff at docs/exec-plans/active/<plan>.md is done.
@@ -186,9 +186,14 @@ The codex-plugin-cc slash command `/codex:adversarial-review` sets
 `disable-model-invocation: true`, so the orchestrator cannot invoke it
 from inside a turn. The Evaluator therefore runs through the underlying
 `codex-companion.mjs` script via Bash. The script ships with the plugin
-under `${CLAUDE_PLUGIN_ROOT}/scripts/`; `CLAUDE_PLUGIN_ROOT` is populated
-in any orchestrator Bash call when codex-plugin-cc is installed. The
-choice of `adversarial-review` over `review` is forced by tooling:
+under `~/.claude/plugins/`, but `CLAUDE_PLUGIN_ROOT` is **not** set in an
+ordinary orchestrator Bash tool call — Claude Code injects it only inside a
+plugin's own hook or slash-command context, never in the ad-hoc Bash calls
+the orchestrator uses here. The `evaluator-cmd` above therefore locates the
+script with the same `find ~/.claude/plugins` discovery shim the pre-approval
+critic hook uses (`harness-planner-critic-hook.mjs` → `findCompanion`), rather
+than interpolating the variable. The choice of `adversarial-review` over
+`review` is forced by tooling:
 `adversarial-review` is the only review command that accepts focus text,
 which the Evaluator needs to carry its verdict-block instructions. The
 focus text above is framed as adversarial verification of conformance so

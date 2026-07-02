@@ -1,7 +1,7 @@
 ---
 owner: {{REPO_NAME}}
 status: stable
-last_reviewed: 2026-06-16
+last_reviewed: 2026-07-02
 update_trigger: on-fleet-policy-change
 ---
 
@@ -48,10 +48,10 @@ that flag.
 | 14 | Phase 5 ExecPlan | Design subagent | Claude Task tool, Opus 4.8 xhigh | Draft every ExecPlan. No complexity threshold — see ADR pre-approval-critic-gate. |
 | 15 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review every draft plan before lead approval. **Auto-invoked synchronously** by `.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner` SubagentStop; the hook writes the verdict into the plan's `## Pre-approval critic transcript` section. Failure modes (plugin missing, codex crash) write a `BLOCKED: <reason>` placeholder in the same section. See ADR pre-approval-critic-gate. |
 | 16 | Phase 6 execution | Orchestrator | Main session | Execute approved plan steps and update progress. |
-| 17 | Mid-execution diff sanity | Checker / rescue | `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" review` | Request when the diff grows broad, risky, or surprising. The `/codex:review` slash command sets `disable-model-invocation: true`, so the orchestrator invokes the underlying companion script via Bash. |
+| 17 | Mid-execution diff sanity | Checker / rescue | `node "$(find ~/.claude/plugins -name codex-companion.mjs -type f 2>/dev/null | head -1)" review` | Request when the diff grows broad, risky, or surprising. The `/codex:review` slash command sets `disable-model-invocation: true`, so the orchestrator invokes the underlying companion script via Bash. |
 | 18 | Rescue implementation | Checker / rescue | `Agent(subagent_type="codex:codex-rescue", prompt=…)` | Use when the orchestrator is stuck or needs an independent implementation attempt. The `/codex:rescue` slash command is user-only; the orchestrator routes through the `codex:codex-rescue` subagent directly via the `Agent` tool. |
-| 19 | Async result harvest | Checker / rescue | `BashOutput` on the spawned shell (preferred) or `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" result [job-id]` | Default to synchronous Bash invocation in step 17/20 — the verdict lands in stdout and needs no harvest. Only required when a checker was launched with `run_in_background: true`. The `/codex:result` slash command is user-only. |
-| 20 | Completion Evaluator | Checker / rescue | `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" adversarial-review --base <merge-base>` | Default Evaluator command before moving a plan to `completed/`. Uses `adversarial-review` for its steerability (the only review command that accepts focus text); the focus text is framed as adversarial verification of conformance — see ADR evaluator-gate § Tool selection. |
+| 19 | Async result harvest | Checker / rescue | `BashOutput` on the spawned shell (preferred) or `node "$(find ~/.claude/plugins -name codex-companion.mjs -type f 2>/dev/null | head -1)" result [job-id]` | Default to synchronous Bash invocation in step 17/20 — the verdict lands in stdout and needs no harvest. Only required when a checker was launched with `run_in_background: true`. The `/codex:result` slash command is user-only. |
+| 20 | Completion Evaluator | Checker / rescue | `node "$(find ~/.claude/plugins -name codex-companion.mjs -type f 2>/dev/null | head -1)" adversarial-review --base <merge-base>` | Default Evaluator command before moving a plan to `completed/`. Uses `adversarial-review` for its steerability (the only review command that accepts focus text); the focus text is framed as adversarial verification of conformance — see ADR evaluator-gate § Tool selection. |
 | 21 | Session exit and steering loop | Orchestrator | Main session | Run close-out, then route model drift through the steering loop. |
 
 ## Codex commands reference
@@ -64,12 +64,17 @@ in practice; it forwards to the `codex:codex-rescue` subagent which the
 orchestrator *can* invoke via the `Agent` tool. The orchestrator therefore
 calls the underlying tooling through two paths:
 
-- Bash → `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" <subcommand>`
-  for review, adversarial-review, result, status, cancel. The
-  `harness-planner-critic-hook.mjs` ships a discovery shim
-  (`find ~/.claude/plugins/ -name codex-companion.mjs`) for hook contexts
-  where `CLAUDE_PLUGIN_ROOT` is not populated; orchestrator Bash calls have
-  the variable available.
+- Bash → `node "$(find ~/.claude/plugins -name codex-companion.mjs -type f 2>/dev/null | head -1)" <subcommand>`
+  for review, adversarial-review, result, status, cancel. `CLAUDE_PLUGIN_ROOT`
+  is **not** populated in an ordinary orchestrator Bash tool call — Claude Code
+  injects it only inside a plugin's own hook or slash-command execution context,
+  and the codex review slash commands are user-only (`disable-model-invocation:
+  true`), so the orchestrator never reaches the script through a context that
+  sets the variable. Both the orchestrator and the
+  `harness-planner-critic-hook.mjs` (function `findCompanion`) therefore locate
+  the script by searching `~/.claude/plugins` rather than interpolating
+  `${CLAUDE_PLUGIN_ROOT}`. Keep this exact command shape so a single
+  `settings.local.json` allowlist entry covers every invocation.
 - Agent tool with `subagent_type="codex:codex-rescue"` for rescue work.
 
 Roles:
