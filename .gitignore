@@ -31,6 +31,8 @@
 !map-endpoint/**
 !method-diagram/
 !method-diagram/**
+!codebase-explainer/
+!codebase-explainer/**
 
 # Generated Python bytecode
 **/__pycache__/
