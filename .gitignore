@@ -25,6 +25,8 @@
 !di-map/**
 !drawio/
 !drawio/**
+!go-release/
+!go-release/**
 !go-tui/
 !go-tui/**
 !map-endpoint/
