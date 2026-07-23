@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+#
+# pre-commit hook for the init-harness-speckit skill.
+# Refuses commits that touch assets/ or SKILL.md unless VERSION was also
+# bumped AND a matching versions/<new-version>.md is staged. This is the
+# keystone of the token-efficient re-run: implementing repos learn what
+# changed by reading only the per-version files, so every asset edit must
+# ship its version file.
+#
+# Activate (skill-local, mirrors init-docs):
+#   git config core.hooksPath init-harness-speckit/.githooks
+#
+# Bypass: INIT_HARNESS_SPECKIT_BYPASS="<reason>" git commit ...
+# See: SKILL.md → "How to update this skill".
+
+set -e
+
+HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SKILL_DIR=$(cd "$HOOK_DIR/.." && pwd)
+SKILL_PREFIX=$(git -C "$SKILL_DIR" rev-parse --show-prefix)
+
+if [ -n "${INIT_HARNESS_SPECKIT_BYPASS:-}" ]; then
+  echo "→ version-gate: BYPASSED — reason: $INIT_HARNESS_SPECKIT_BYPASS" >&2
+  exit 0
+fi
+
+# Include deletes (D): removing an asset is a major-version change and must
+# still bump VERSION + ship a migration file.
+TOUCHED=$(git -C "$SKILL_DIR" diff --cached --relative --name-only --diff-filter=ACMD \
+  | grep -E '^(assets/|SKILL\.md$)' \
+  || true)
+
+if [ -z "$TOUCHED" ]; then
+  exit 0
+fi
+
+echo "→ pre-commit: checking version sync"
+echo "  touched:"
+echo "$TOUCHED" | sed 's/^/    /'
+
+# VERSION must be staged (changed) in this commit.
+VERSION_STAGED=$(git -C "$SKILL_DIR" diff --cached --relative --name-only --diff-filter=ACM \
+  | grep -E '^VERSION$' \
+  || true)
+
+if [ -z "$VERSION_STAGED" ]; then
+  {
+    echo "✗ version-gate: asset or SKILL.md changes staged without a VERSION bump"
+    echo "  expected: ./bump-version.sh {major|minor|patch}, then stage VERSION"
+    echo "  bypass:   INIT_HARNESS_SPECKIT_BYPASS=\"<reason>\" git commit ..."
+  } >&2
+  exit 1
+fi
+
+# The staged VERSION value must have a matching, staged versions/<v>.md.
+NEW_VERSION=$(git -C "$SKILL_DIR" show ":${SKILL_PREFIX}VERSION" | tr -d '[:space:]')
+if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+  {
+    echo "✗ version-gate: staged VERSION is not semver: '$NEW_VERSION'"
+  } >&2
+  exit 1
+fi
+
+VERSION_FILE_STAGED=$(git -C "$SKILL_DIR" diff --cached --relative --name-only --diff-filter=ACM \
+  | grep -E "^versions/${NEW_VERSION//./\\.}\.md$" \
+  || true)
+
+if [ -z "$VERSION_FILE_STAGED" ]; then
+  {
+    echo "✗ version-gate: VERSION is $NEW_VERSION but versions/$NEW_VERSION.md is not staged"
+    echo "  expected: a staged versions/$NEW_VERSION.md with 'What changed' + 'How to apply'"
+    echo "  bypass:   INIT_HARNESS_SPECKIT_BYPASS=\"<reason>\" git commit ..."
+  } >&2
+  exit 1
+fi
+
+# Reject the unfilled template placeholder.
+if git -C "$SKILL_DIR" show ":${SKILL_PREFIX}versions/$NEW_VERSION.md" | grep -qE '<one-line feature name>|<Describe the change'; then
+  {
+    echo "✗ version-gate: versions/$NEW_VERSION.md still contains template placeholders"
+    echo "  fill in 'What changed' and 'How to apply' before committing"
+  } >&2
+  exit 1
+fi
+
+echo "  • version-sync (ok) → $NEW_VERSION"

@@ -15,6 +15,8 @@
 !init-docs/**
 !init-harness/
 !init-harness/**
+!init-harness-speckit/
+!init-harness-speckit/**
 !commit/
 !commit/**
 !changelog/
