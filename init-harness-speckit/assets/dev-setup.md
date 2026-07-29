@@ -35,11 +35,25 @@ at commit time.
 
 The reference implementation lives at
 `scripts/harness/check_plan_coverage.py` (stdlib Python >= 3.9, no installs).
-It is wired as the last step of `.githooks/pre-commit`:
+Wiring it into pre-commit is a **convention this harness sets up where it
+can, not a guarantee** — a repo's existing hook manager (husky, lefthook,
+`.pre-commit-config.yaml`, plain `.githooks/`) always takes precedence over
+the harness owning `core.hooksPath`. Check whether it's actually wired in
+*this* clone:
+
+    python3 scripts/harness/check_plan_coverage.py --doctor
+
+`WIRED` means the line below is already called from your active pre-commit
+hook. `UNWIRED` means it isn't — see `docs/HARNESS-TODO.md` for the fix that
+applies to this repo's hook manager. The line itself, if you're wiring it by
+hand:
 
     python3 "$(git rev-parse --show-toplevel)/scripts/harness/check_plan_coverage.py"
 
-Enable the hook per clone:
+If this repo has no hook manager of its own, the harness set one up at
+`.githooks/pre-commit` and ran `git config core.hooksPath .githooks` for you;
+that only needs re-running per clone if `core.hooksPath` doesn't persist in
+your git config location of choice:
 
     git config core.hooksPath .githooks
 
@@ -62,10 +76,40 @@ Verify the sensor and the loop engine after wiring:
 
 ## Adding stack lanes to pre-commit
 
-The shipped `.githooks/pre-commit` runs only the plan-coverage sensor, so it is
-stack-neutral. Add lanes for this repo's stack (format, vet/lint, test on
-affected packages) before the plan-coverage step. Keep them fast — they run on
-every commit.
+The plan-coverage step is stack-neutral by design — it's a single line, not a
+config format, so it drops into any hook manager. Add lanes for this repo's
+stack (format, vet/lint, test on affected packages) before the plan-coverage
+line, in whichever file is your active pre-commit hook (`--doctor` above
+tells you which one). Keep them fast — they run on every commit.
+
+## GitHub MCP server
+
+`/speckit-taskstoissues` (converts `tasks.md` into GitHub issues) needs the
+GitHub MCP server configured — it has no `gh` CLI fallback. If the harness
+scaffold wrote `.mcp.json` for you (Docker-based, official GitHub MCP server
+image), you still need to:
+
+1. Create a personal access token with `repo` scope. If the org requires SSO,
+   authorize the token for it (github.com → Settings → Developer settings →
+   Personal access tokens → Configure SSO).
+2. Export it in your shell profile — never commit it, never put it in
+   `.mcp.json` itself:
+
+       export GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...
+
+3. Using Codex instead of / in addition to Claude Code? Codex reads MCP
+   servers from `~/.codex/config.toml` (user-global, not part of this repo —
+   the harness doesn't write it). Add:
+
+       [mcp_servers.github]
+       command = "docker"
+       args = ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
+
+       [mcp_servers.github.env]
+       GITHUB_PERSONAL_ACCESS_TOKEN = "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+
+If `docs/HARNESS-TODO.md` flags Docker as missing, install it first — the
+server runs as a container, not a native binary.
 
 ## Skipping checks
 

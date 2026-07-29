@@ -84,11 +84,12 @@ The loop output means:
 
 ## Issues
 
-To turn `tasks.md` into GitHub issues:
+To turn `tasks.md` into GitHub issues, use spec-kit's own command:
 
 ```bash
-scripts/harness/tasks_to_issues.sh
+/speckit-taskstoissues
 ```
 
-The script requires authenticated `gh`, deduplicates by `T###`, and assigns
-issues to `@me`.
+It deduplicates against existing issues via the GitHub MCP server and assigns
+issues to `@me`. Requires the GitHub MCP server (see `docs/processes/dev-setup.md`
+§ GitHub MCP server).

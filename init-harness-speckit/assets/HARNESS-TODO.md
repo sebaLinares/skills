@@ -34,6 +34,34 @@ instead of placeholders.
   supreme document). Author it via `/speckit-constitution`.
   *Done when:* it no longer contains `[PROJECT_NAME]` / `[PRINCIPLE_1_NAME]`.
 
+## Conditional items
+
+The scaffold appends these only when it actually hit the condition — they
+won't appear in every repo.
+
+- [ ] **Wire the plan-coverage sensor by hand** — Step 10 found a YAML/JSON
+  hook manager (`lefthook.yml`, `.pre-commit-config.yaml`, a
+  `simple-git-hooks` config) and will not auto-edit it. Add this line to the
+  manager's plan-coverage entry:
+  `python3 "$(git rev-parse --show-toplevel)/scripts/harness/check_plan_coverage.py"`.
+  *Done when:* `python3 scripts/harness/check_plan_coverage.py --doctor`
+  prints `WIRED`.
+- [ ] **Install Docker** — the GitHub MCP server (needed by
+  `/speckit-taskstoissues`) runs as a container; Step 5b found no `docker` on
+  `PATH` and skipped writing `.mcp.json`. Install Docker, then re-run
+  `/init-harness-speckit` so it can write the config.
+  *Done when:* `docker --version` succeeds and `.mcp.json` has a `github` entry.
+- [ ] **Authorize the GitHub PAT** — create a personal access token (scope
+  `repo`), authorize it for SSO against the org if required, and export it as
+  `GITHUB_PERSONAL_ACCESS_TOKEN` in your shell profile. See
+  `docs/processes/dev-setup.md` § GitHub MCP server.
+  *Done when:* `/speckit-taskstoissues` runs without an auth error.
+- [ ] **Codex: add the GitHub MCP server to `~/.codex/config.toml`** — this is
+  a user-global file outside the repo, so the harness doesn't write it. Copy
+  the `[mcp_servers.github]` snippet from `docs/processes/dev-setup.md` §
+  GitHub MCP server.
+  *Done when:* Codex can list/create issues via `/speckit-taskstoissues`.
+
 ## When you fill one
 
 Edit the file, delete its prompts/markers, tick its box here. When all boxes are

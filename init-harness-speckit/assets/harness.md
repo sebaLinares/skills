@@ -61,7 +61,10 @@ fills `analyzed:`, and promotes `plan.md` from `status: draft` to
   `stop-converged`, or `stop-cap`.
 
 These hooks are soft controls because skills execute them by instruction. The
-hard control remains `scripts/harness/check_plan_coverage.py` at pre-commit.
+hard control is `scripts/harness/check_plan_coverage.py` at pre-commit *when
+wired* — `python3 scripts/harness/check_plan_coverage.py --doctor` reports
+whether this clone's active hook actually calls it. See [harness-design.md §
+Sensor attachment].
 
 ## Loop Termination
 

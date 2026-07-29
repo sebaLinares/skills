@@ -76,8 +76,11 @@ Work moves through four phases:
 Gates:
 
 - No code without one active, analyzed `specs/<feature>/plan.md`.
-- No edits outside that plan's `covers:`; `scripts/harness/check_plan_coverage.py`
-  enforces this at pre-commit.
+- No edits outside that plan's `covers:`. `scripts/harness/check_plan_coverage.py`
+  enforces this at pre-commit *when wired* — run
+  `python3 scripts/harness/check_plan_coverage.py --doctor` to check whether it
+  actually is in this clone; if `UNWIRED`, treat the rule as convention only
+  until fixed (see `docs/HARNESS-TODO.md`).
 - Not done until the plan's `verify:` command is green.
 
 ## On receiving a task

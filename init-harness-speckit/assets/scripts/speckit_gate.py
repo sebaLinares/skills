@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -71,7 +72,25 @@ def feature_from_json(root: Path) -> Path | None:
     return path
 
 
+def feature_from_env(root: Path) -> Path | None:
+    env_dir = os.environ.get("SPECIFY_FEATURE_DIRECTORY")
+    if not env_dir:
+        return None
+    path = Path(env_dir)
+    return path if path.is_absolute() else root / path
+
+
 def resolve_feature_dir(root: Path) -> Path:
+    # Precedence matches spec-kit's own resolution order (.specify/scripts/bash/common.sh):
+    # SPECIFY_FEATURE_DIRECTORY env var, then .specify/feature.json, then a single
+    # status: active plan. spec-kit is the source of truth for "which feature";
+    # the harness only adds the last fallback for repos that haven't run specify yet.
+    from_env = feature_from_env(root)
+    if from_env is not None:
+        if (from_env / "plan.md").exists():
+            return from_env
+        raise SystemExit(f"SPECIFY_FEATURE_DIRECTORY has no plan.md: {from_env}")
+
     from_json = feature_from_json(root)
     if from_json is not None:
         if (from_json / "plan.md").exists():
@@ -115,11 +134,40 @@ def run_verify(feature_dir: Path, stream: bool) -> int:
     return result.returncode
 
 
+def wiring_warning() -> None:
+    """Non-blocking check: is the plan-coverage sensor actually wired into pre-commit?
+
+    feature.json / SPECIFY_FEATURE_DIRECTORY can resolve a single feature even
+    when the mechanical sensor that would otherwise enforce it is disconnected
+    (e.g. a hook manager like husky overwrote core.hooksPath). This never fails
+    the gate — it only surfaces the disconnect so it isn't silently invisible.
+    """
+    sensor = Path(__file__).resolve().parent / "check_plan_coverage.py"
+    if not sensor.exists():
+        return
+    result = subprocess.run(
+        [sys.executable, str(sensor), "--doctor"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(
+            "warning: plan-coverage sensor is not wired into pre-commit "
+            "(run: python3 scripts/harness/check_plan_coverage.py --doctor)",
+            file=sys.stderr,
+        )
+
+
 def gate() -> int:
     root = repo_root()
+    wiring_warning()
     feature_dir = resolve_feature_dir(root)
+    active = active_plan_dirs(root)
     text = plan_text(feature_dir)
     failures: list[str] = []
+    if len(active) > 1:
+        names = "\n".join(f"  - {path.relative_to(root)}" for path in active)
+        failures.append(f"more than one active specs/*/plan.md (pre-commit will reject this):\n{names}")
     if scalar(text, "status") != "active":
         failures.append("plan.md must be `status: active`")
     if not scalar(text, "analyzed"):
@@ -140,6 +188,7 @@ def gate() -> int:
 
 def gate_lite() -> int:
     root = repo_root()
+    wiring_warning()
     active = active_plan_dirs(root)
     if len(active) != 1:
         if not active:
@@ -234,10 +283,13 @@ def init_git_repo(path: Path) -> None:
     subprocess.run(["git", "config", "user.name", "Self Test"], cwd=path, check=True)
 
 
-def run_self_case(root: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
+def run_self_case(
+    root: Path, args: list[str], env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(Path(__file__).resolve()), *args],
         cwd=root,
+        env=env,
         capture_output=True,
         text=True,
     )
@@ -329,6 +381,44 @@ verify: false
         write(feature / ".loop-state.json", '{"iteration": 4}\n')
         result = run_self_case(root, ["loop"])
         ok = expect("loop-stop-cap", result.stdout.startswith("stop-cap\n")) and ok
+
+        # feature.json resolves unambiguously, but a second active plan exists
+        # elsewhere: gate must still fail, because pre-commit's plan-coverage
+        # sensor (which reads the index independently) will reject the commit.
+        write(feature / "plan.md", """---
+status: active
+analyzed: 2026-07-21
+verify: true
+---
+# Plan
+""")
+        write(feature / "tasks.md", "- [ ] T001 Do one thing\n")
+        write(root / "specs/002-other/plan.md", """---
+status: active
+analyzed: 2026-07-21
+verify: true
+---
+# Plan
+""")
+        write(root / ".specify/feature.json", json.dumps({"feature_directory": "specs/001-demo"}) + "\n")
+        result = run_self_case(root, ["gate"])
+        ok = expect("gate-feature-json-resolves-but-two-active-blocks", result.returncode == 1) and ok
+
+        # SPECIFY_FEATURE_DIRECTORY takes precedence over feature.json (matches
+        # spec-kit's own resolution order). Demote the second plan first so
+        # only the uniqueness check doesn't interfere with this case.
+        write(root / "specs/002-other/plan.md", """---
+status: draft
+analyzed: 2026-07-21
+verify: true
+---
+# Plan
+""")
+        write(root / ".specify/feature.json", json.dumps({"feature_directory": "specs/002-other"}) + "\n")
+        env = os.environ.copy()
+        env["SPECIFY_FEATURE_DIRECTORY"] = "specs/001-demo"
+        result = run_self_case(root, ["gate"], env=env)
+        ok = expect("gate-env-var-wins-over-feature-json", result.returncode == 0) and ok
 
     return 0 if ok else 1
 
