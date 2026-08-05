@@ -75,7 +75,17 @@ points at the constitution). Everything else it adds lives alongside spec-kit
 order — `SPECIFY_FEATURE_DIRECTORY` env var, then `.specify/feature.json`,
 then a single `status: active` plan as a fallback for repos that haven't run
 `specify` yet. spec-kit decides which feature is "current"; the harness does
-not override that. What the harness adds on top is independent of that
+not override that — but it does **validate that the answer is still alive**.
+Both hints are written once and outlive the feature they name: in the
+reference repo, `feature.json` still pointed at a `status: completed` plan, so
+every harness command silently gated a finished feature. A hint resolving to a
+non-active plan is therefore treated as stale — the harness falls back to the
+single active plan and warns, or fails with an explicit stale-feature message
+when there is no unambiguous fallback. This resolution exists in exactly one
+place: `wt_fanout.sh` calls `speckit_gate.py feature-dir` rather than carrying
+a second implementation that can drift from it (it did).
+
+What the harness adds on top is independent of that
 selection: `gate` still requires exactly one active plan across `specs/`,
 even when `feature.json` resolves unambiguously to one of several — because
 the pre-commit sensor (Decision, below) reads active plans from the git index
@@ -116,7 +126,27 @@ owns, use spec-kit's path; do not maintain a second one beside it.
   coverage check remains the hard control.
 - `/speckit-constitution` step 4 and `/speckit-implement` step 4 are
   neutralized by policy rather than by editing generated skills, because both
-  can create drift or write outside the active plan's `covers:`.
+  can create drift or write outside the active plan's `covers:`. That policy
+  is written as a hard constraint in `AGENTS.md` and tabulated in
+  `docs/processes/harness.md` § Overrides of generated spec-kit steps — a
+  policy stated only in this ADR is one an agent never reads at the moment it
+  matters.
+- `scripts/harness/` is **not** exempt from `covers:`. Exempting it let a
+  commit rewrite the sensors themselves with no active plan, which is the one
+  change that most needs a plan. The cost is that the scaffold's own install
+  commit has to use `HARNESS_BYPASS`, which is the correct place for a
+  deliberate, logged exception.
+- Convergence and completion are separate steps. `loop` reporting
+  `stop-converged` names `closeout` as the required final action, and
+  `closeout` re-checks tasks and `verify:` before writing
+  `status: completed` — a plan is never closed on the loop's word alone.
+- `speckit_gate.py doctor` asserts the harness invariants (ignore entries,
+  hooks, plan-template edits, skills, retired files, feature hint, sensor
+  wiring). The version marker is otherwise written on trust: the reference
+  repo carried `.harness-version` `2.0.0` while still holding a file that
+  version's delta retires. The skill refuses to write or advance the marker
+  until `doctor` passes, which turns "the upgrade was applied" from a claim
+  into a measurement.
 - The scaffold provisions a GitHub MCP server (Docker-based) when
   `/speckit-taskstoissues` would otherwise be inert; the harness ships no
   parallel `gh`-based issue-creation script.

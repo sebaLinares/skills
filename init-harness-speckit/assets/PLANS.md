@@ -53,10 +53,11 @@ covers:
 This field is consumed by `scripts/harness/check_plan_coverage.py` at
 pre-commit, which reads plan content from the git **index** (the staged
 version) — an unstaged edit to `covers:` cannot authorize a commit. Always
-allowed without coverage: anything under `docs/`, `specs/`, or
-`scripts/harness/`, plus root anchors (`AGENTS.md`, `CLAUDE.md`,
-`ARCHITECTURE.md`, `SECURITY.md`, `README.md`) and `.harness-version`. Staged
-deletes count as edits and need coverage too. Bypass with:
+allowed without coverage: anything under `docs/` or `specs/`, plus root anchors
+(`AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `SECURITY.md`, `README.md`) and
+`.harness-version`. `scripts/harness/` is deliberately **not** on that list — a
+change to the sensors needs `covers:` like any other code. Staged deletes count
+as edits and need coverage too. Bypass with:
 
 ```bash
 HARNESS_BYPASS="<reason>" git commit ...

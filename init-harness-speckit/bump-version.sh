@@ -74,6 +74,14 @@ confirms the change is not already present, then applies it. A $LEVEL bump:
 $HINT>
 
 1. <step>
+
+## Removed
+
+<Files this version retires, one per line, or "none". Every entry here must
+also be added to RETIRED_FILES in assets/scripts/speckit_gate.py so that
+\`doctor\` fails on a repo that recorded this version without deleting them.>
+
+none
 EOF
 
 echo "$NEXT" > "$VERSION_FILE"

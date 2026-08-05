@@ -26,7 +26,11 @@ ALWAYS_ALLOWED_ROOT = {
     "README.md",
     ".harness-version",
 }
-ALWAYS_ALLOWED_PREFIXES = ("docs/", "scripts/harness/", "specs/")
+# `scripts/harness/` is deliberately absent: the sensors are the strongest
+# mechanical guard in the harness, so changing them needs an active plan like
+# any other code. The scaffold's own install commit is the one legitimate
+# exception and uses HARNESS_BYPASS.
+ALWAYS_ALLOWED_PREFIXES = ("docs/", "specs/")
 
 
 def _git(args: list[str], cwd: Path | None = None, env: dict[str, str] | None = None) -> str:
@@ -319,6 +323,13 @@ verify: go test ./...
         _git(["mv", "internal/demo.go", "other/demo.go"], cwd=repo)
         ok = run_case(repo, "git-mv-outside-covers-blocks", 1) and ok
         _git(["reset", "--hard"], cwd=repo)
+
+        # The sensor does not authorize edits to itself.
+        write(repo / "scripts/harness/check_plan_coverage.py", "# tampered\n")
+        _git(["add", "scripts/harness/check_plan_coverage.py"], cwd=repo)
+        ok = run_case(repo, "harness-script-change-needs-coverage", 1) and ok
+        _git(["reset", "--hard"], cwd=repo)
+        shutil.rmtree(repo / "scripts", ignore_errors=True)
 
         ok = run_case(repo, "doctor-unwired-fresh-repo", 1, args=["--doctor"]) and ok
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 usage() {
   echo "usage: wt_fanout.sh {start|collect|status|--selftest}" >&2
 }
@@ -23,36 +25,11 @@ plan_value() {
   ' "$file"
 }
 
+# Feature resolution lives in speckit_gate.py only. A second implementation
+# here drifted out of sync with it — including the check that the resolved
+# plan is still active — so this delegates instead of duplicating.
 feature_dir() {
-  local root=$1
-  if [ -f "$root/.specify/feature.json" ]; then
-    python3 - "$root" <<'PY'
-import json
-import pathlib
-import sys
-
-root = pathlib.Path(sys.argv[1])
-data = json.loads((root / ".specify/feature.json").read_text())
-feature = data.get("feature_directory")
-if feature:
-    path = pathlib.Path(feature)
-    print(path if path.is_absolute() else root / path)
-PY
-    return
-  fi
-
-  local matches=()
-  while IFS= read -r plan; do
-    if [ "$(plan_value "$plan" status)" = "active" ]; then
-      matches+=("$(dirname "$plan")")
-    fi
-  done < <(find "$root/specs" -mindepth 2 -maxdepth 2 -name plan.md 2>/dev/null | sort)
-
-  if [ "${#matches[@]}" -ne 1 ]; then
-    echo "expected one active specs/*/plan.md, found ${#matches[@]}" >&2
-    return 1
-  fi
-  echo "${matches[0]}"
+  python3 "$SCRIPT_DIR/speckit_gate.py" feature-dir
 }
 
 require_active_plan() {
@@ -77,7 +54,7 @@ current_parallel_tasks() {
 start_worktrees() {
   local root feature repo branch task path task_branch
   root=$(root_dir)
-  feature=$(feature_dir "$root")
+  feature=$(feature_dir)
   require_active_plan "$feature"
   branch=$(git -C "$root" branch --show-current)
   repo=$(basename "$root")
@@ -106,7 +83,7 @@ worktree_for_branch() {
 collect_worktrees() {
   local root feature branch task_branch task path
   root=$(root_dir)
-  feature=$(feature_dir "$root")
+  feature=$(feature_dir)
   require_active_plan "$feature"
   branch=$(git -C "$root" branch --show-current)
   if [ -z "$branch" ]; then
@@ -134,7 +111,7 @@ collect_worktrees() {
 status_worktrees() {
   local root feature branch task_branch task path state
   root=$(root_dir)
-  feature=$(feature_dir "$root")
+  feature=$(feature_dir)
   branch=$(git -C "$root" branch --show-current)
   while IFS= read -r task_branch; do
     [ -n "$task_branch" ] || continue
@@ -173,14 +150,14 @@ EOF
   touch "$root/README.md"
   git -C "$root" add .
   git -C "$root" commit -m init >/dev/null
-  (cd "$root" && "$OLDPWD/scripts/harness/wt_fanout.sh" start) >/dev/null
+  (cd "$root" && "$SCRIPT_DIR/wt_fanout.sh" start) >/dev/null
   echo "one" > "$tmp/repo-wt-T001/a.txt"
   git -C "$tmp/repo-wt-T001" add a.txt
   git -C "$tmp/repo-wt-T001" commit -m T001 >/dev/null
   echo "two" > "$tmp/repo-wt-T002/b.txt"
   git -C "$tmp/repo-wt-T002" add b.txt
   git -C "$tmp/repo-wt-T002" commit -m T002 >/dev/null
-  (cd "$root" && "$OLDPWD/scripts/harness/wt_fanout.sh" collect) >/dev/null
+  (cd "$root" && "$SCRIPT_DIR/wt_fanout.sh" collect) >/dev/null
   test -f "$root/a.txt"
   test -f "$root/b.txt"
   test ! -d "$tmp/repo-wt-T001"

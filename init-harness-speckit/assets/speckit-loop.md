@@ -37,7 +37,22 @@ This is the operator path for one feature.
    verify: <command that proves this feature works>
    ```
 
-The gate requires `status: active`, a non-empty `analyzed:`, and `tasks.md`.
+The full gate requires `status: active`, a non-empty `analyzed:`, and
+`tasks.md`.
+
+## Lite Path
+
+For a plan small enough that a task breakdown adds nothing, skip `/speckit-tasks`
+and take the lite path:
+
+```bash
+/harness-implement-lite
+```
+
+Its gate (`speckit_gate.py gate-lite`) requires exactly one active plan with
+`analyzed:` filled and a **real** `verify:` command — and no `tasks.md`. Do not
+create `tasks.md` just to satisfy the full gate; `covers:` and `verify:` are
+the controls either way. Close out the same way as the full path.
 
 ## Parallel Fan-out
 
@@ -78,9 +93,21 @@ Hooks run `verify:` after implementation and `harness-loop` after convergence.
 The loop output means:
 
 - `continue`: run another implement/converge pass.
-- `stop-converged`: no unchecked tasks remain and `verify:` is green.
+- `stop-converged`: no unchecked tasks remain and `verify:` is green. Not
+  finished yet — close the plan out (below).
 - `stop-cap`: stop after five passes. Open a partial PR and paste the printed
   remaining-work block as a PR comment.
+
+## Close Out
+
+```bash
+python3 scripts/harness/speckit_gate.py closeout
+```
+
+It re-checks that no tasks are unchecked and `verify:` is green, then sets
+`plan.md` to `status: completed` and prints the remaining session-exit steps.
+It refuses if either check fails. Leaving a finished plan at `status: active`
+blocks the next feature's gate.
 
 ## Issues
 

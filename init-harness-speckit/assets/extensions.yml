@@ -4,7 +4,7 @@ hooks:
       command: speckit-clarify
       optional: false
       description: "Clarify the spec before planning."
-      prompt: "Planning is blocked until unresolved ambiguity has been reviewed."
+      prompt: "Planning is blocked until unresolved ambiguity has been reviewed. If clarification wrote changes to spec.md, stop here: restate what changed and wait for explicit human approval of the updated scope before planning."
   after_tasks:
     - extension: harness
       command: speckit-analyze
@@ -15,8 +15,8 @@ hooks:
     - extension: harness
       command: harness-gate
       optional: false
-      description: "Require active analyzed plan and tasks before implementation."
-      prompt: "Implementation is blocked until plan.md is active, analyzed, and tasks.md exists."
+      description: "Require active analyzed plan and tasks before full implementation."
+      prompt: "Full Execute is blocked until plan.md is active, analyzed, and tasks.md exists. A small plan may instead take the lite path (harness-implement-lite), which requires an active analyzed plan with a real verify: and no tasks.md — do not block lite execution for a missing tasks.md."
   after_implement:
     - extension: harness
       command: harness-verify

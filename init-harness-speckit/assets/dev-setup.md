@@ -60,9 +60,11 @@ your git config location of choice:
 What the check does:
 
 - Reads staged added, copied, modified, and deleted files from the git index.
-- Always allows anything under `docs/`, `specs/`, or `scripts/harness/`, plus
-  root anchors `AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `SECURITY.md`,
-  `README.md`, and `.harness-version`.
+- Always allows anything under `docs/` or `specs/`, plus root anchors
+  `AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `SECURITY.md`, `README.md`, and
+  `.harness-version`. **`scripts/harness/` is not on that list**: the sensors
+  are the strongest mechanical guard here, so changing them needs an active
+  plan covering them, like any other code.
 - Requires every other staged file to prefix-match a `covers:` entry from the
   single active `specs/<feature>/plan.md`. A trailing `/` covers a directory.
 - Fails if more than one `specs/*/plan.md` is `status: active`.
@@ -73,6 +75,12 @@ Verify the sensor and the loop engine after wiring:
 
     python3 scripts/harness/check_plan_coverage.py --selftest
     python3 scripts/harness/speckit_gate.py selftest
+    bash scripts/harness/wt_fanout.sh --selftest
+
+Check that this repo's harness itself is intact (ignore entries, hooks,
+plan-template edits, skills, retired files, feature hint, sensor wiring):
+
+    python3 scripts/harness/speckit_gate.py doctor
 
 ## Adding stack lanes to pre-commit
 
