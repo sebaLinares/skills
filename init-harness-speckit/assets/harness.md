@@ -130,7 +130,9 @@ When the user signals "we're done" / "close out" / "ttyl", before responding:
 1. **Build/verify** — if code was touched, run the plan's `verify:` (or the
    build command in `dev-setup.md`). A regression blocks; report it. If the
    plan is finished, `speckit_gate.py closeout` does this check and completes
-   the plan in one step.
+   the plan in one step. Commit `closeout`'s `plan.md` edit **together with**
+   the work it closes: the sensor accepts a plan this same commit moves from
+   `active` to `completed`, so no separate closing commit is needed.
 2. **Plan state** — the active plan's Progress reflects reality. Split any
    partially-done step into done / remaining.
 3. **Doc coherence** — every new/edited doc is indexed in `docs/README.md`.

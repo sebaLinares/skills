@@ -57,7 +57,10 @@ allowed without coverage: anything under `docs/` or `specs/`, plus root anchors
 (`AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `SECURITY.md`, `README.md`) and
 `.harness-version`. `scripts/harness/` is deliberately **not** on that list — a
 change to the sensors needs `covers:` like any other code. Staged deletes count
-as edits and need coverage too. Bypass with:
+as edits and need coverage too. A plan the *same commit* moves from `active` to
+`completed` still authorizes its `covers:`, so `closeout` and the work it closes
+can land in one commit; a plan already `completed` in `HEAD` authorizes nothing.
+Bypass with:
 
 ```bash
 HARNESS_BYPASS="<reason>" git commit ...

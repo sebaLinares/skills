@@ -2,8 +2,11 @@
 """Plan-coverage check for spec-kit plans.
 
 Refuses a commit whose staged source files are not authorized by the single
-active ``specs/<feature>/plan.md``. The check reads plans from the git index,
-not the worktree, so an unstaged edit to ``covers:`` cannot authorize a commit.
+active ``specs/<feature>/plan.md``. A plan that this same commit moves from
+``active`` to ``completed`` still counts as the active plan, so the commit
+carrying a closed-out feature is not rejected. The check reads plans from the
+git index, not the worktree, so an unstaged edit to ``covers:`` cannot
+authorize a commit.
 
 Stdlib only. Bypass only this check with:
 
@@ -127,11 +130,29 @@ def covered(path: str, prefixes: list[str]) -> bool:
     return False
 
 
+def head_status(path: str) -> str:
+    """`status:` of a plan as of HEAD, or "" if it is not in HEAD."""
+    result = subprocess.run(
+        ["git", "show", f"HEAD:{path}"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return ""
+    return parse_scalar(result.stdout, "status")
+
+
 def active_plans() -> dict[str, list[str]]:
     active: dict[str, list[str]] = {}
     for plan in staged_plan_files():
         content = read_staged(plan)
-        if parse_scalar(content, "status") == "active":
+        status = parse_scalar(content, "status")
+        # A plan going active -> completed in *this* commit still authorizes
+        # it: `speckit_gate.py closeout` writes `completed` before the commit
+        # that carries the covered work, so requiring `active` in the index
+        # would make a feature's final commit unreachable. A plan already
+        # `completed` at HEAD authorizes nothing.
+        if status == "active" or (status == "completed" and head_status(plan) == "active"):
             active[plan] = parse_covers(content)
     return active
 
@@ -330,6 +351,27 @@ verify: go test ./...
         ok = run_case(repo, "harness-script-change-needs-coverage", 1) and ok
         _git(["reset", "--hard"], cwd=repo)
         shutil.rmtree(repo / "scripts", ignore_errors=True)
+
+        # closeout writes `completed` before the commit that carries the work.
+        closed_plan = """---
+status: completed
+covers:
+  - internal/
+verify: go test ./...
+---
+# Plan
+"""
+        write(repo / "specs/001-demo/plan.md", closed_plan)
+        write(repo / "internal/demo.go", "package internal\n\nconst Closed = 1\n")
+        _git(["add", "specs/001-demo/plan.md", "internal/demo.go"], cwd=repo)
+        ok = run_case(repo, "closing-plan-allows", 0) and ok
+
+        # ...but once that closeout is in HEAD, the plan authorizes nothing.
+        _git(["commit", "-m", "close out"], cwd=repo)
+        write(repo / "internal/demo.go", "package internal\n\nconst After = 2\n")
+        _git(["add", "internal/demo.go"], cwd=repo)
+        ok = run_case(repo, "completed-at-head-blocks", 1) and ok
+        _git(["reset", "--hard"], cwd=repo)
 
         ok = run_case(repo, "doctor-unwired-fresh-repo", 1, args=["--doctor"]) and ok
 
