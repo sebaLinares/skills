@@ -37,6 +37,8 @@
 !method-diagram/**
 !codebase-explainer/
 !codebase-explainer/**
+!speckit-brief/
+!speckit-brief/**
 
 # Generated Python bytecode
 **/__pycache__/
