@@ -39,6 +39,8 @@
 !codebase-explainer/**
 !speckit-brief/
 !speckit-brief/**
+!wrap/
+!wrap/**
 
 # Generated Python bytecode
 **/__pycache__/
