@@ -67,6 +67,15 @@ git log --oneline @{u}.. 2>/dev/null           # commits sin pushear
 git log --oneline -5 2>/dev/null               # qué se hizo
 ```
 
+```bash
+git log --merges -3 --oneline 2>/dev/null   # ¿se mergeó algo durante la sesión?
+```
+
+**Si la rama cambió durante la sesión** (mergeaste, se cerró un PR, cambiaste de
+rama), `branch:` guarda **dónde se retoma**, no dónde se trabajó — y entonces
+`## Artefactos` **debe** registrar el PR o el merge commit que produjo el cambio.
+Sin eso, un agente frío ve una rama limpia y no puede reconstruir qué pasó.
+
 - `agent`: `claude` o `codex`, según quién esté corriendo.
 - `project`: proponé un slug y **validalo** contra `~/Notes/<vault>/wiki/projects/`.
   Si no existe, dejalo vacío (`project: ""`) y decilo en el reporte. **Nunca
@@ -166,15 +175,48 @@ Reglas de contenido:
   razonamiento que no quedó escrito en ningún lado.
 - **Redactá secretos.** Tokens, claves, credenciales, datos personales. Si un
   secreto se imprimió en la sesión, decí *que pasó* sin reproducirlo.
-- Si el vault es `cencosud` o `electromatica`, el contenido es confidencial:
-  no va a un artifact publicado ni a ningún servicio externo.
+- **Ninguna nota de sesión sale de su vault**, cualquiera sea. `cencosud` es
+  confidencial de empleador y `electromatica` no tiene canal de egress; y una
+  nota de `slinaresl` puede traer datos de salud, de familia o de terceros. No
+  van a un artifact publicado, a un pastebin, a un issue ni a ningún servicio
+  externo — ni siquiera "para ilustrar el formato".
+- **Datos de salud y de terceros**: si la nota los toca (peso, medicación,
+  diagnóstico, un menor, alguien que no es el usuario), decilo en el reporte
+  final para que quede consciente de qué guardó y dónde.
+- **No cruces vaults.** Una nota puede nombrar la *maquinaria* de otra vault
+  (que existe, cómo sincroniza), nunca su *contenido*. El muro es duro.
 - Los pendientes de **conocimiento** (no de la sesión) van como `- [ ]` en la
   página del wiki que corresponde, no acá. Esta nota es ejecución, no wiki.
 
-## Paso 5 — Reportar
+## Paso 5 — Commitear el vault
 
-Imprimí la ruta absoluta del archivo, el vault elegido y **por qué regla**, y si
-`project` quedó vacío. El hook `Stop` del vault lo commitea solo.
+**Hacelo vos. No lo hace nadie más.** El hook `Stop` de los vaults resuelve el
+repo desde el `cwd`, y `/wrap` casi siempre corre desde un repo de código, no
+desde el vault — así que la nota queda untracked si no la commiteás acá.
+
+**Solo el archivo de la nota.** Nunca `git add -A`: el vault suele tener
+material del humano sin trackear (reuniones, capturas) que no es tuyo y que no
+va en este commit.
+
+```bash
+git -C ~/Notes/<vault> add "workspace/sessions/<archivo>"
+git -C ~/Notes/<vault> commit -q -m "docs(session): <repo> — <slug>"
+```
+
+Mensaje según el caso:
+
+- nota nueva → `docs(session): <repo> — <slug>`
+- actualización → `docs(session): actualiza <repo> — <slug>`
+- `--close` → `docs(session): promueve <repo> — <slug> a sources/handoffs/`
+
+Si el commit falla, **no lo escondas**: reportá que el archivo quedó escrito
+pero sin commitear, y seguí. El archivo en disco es lo que importa; el commit
+es durabilidad, no corrección.
+
+## Paso 6 — Reportar
+
+Imprimí la ruta absoluta del archivo, el vault elegido y **por qué regla**, si
+`project` quedó vacío, y si el commit salió.
 
 ## Modo `--close`
 
@@ -191,7 +233,9 @@ Cuando el trabajo terminó y la nota tiene conocimiento durable:
      "workspace/sessions/YYYY-MM-DD <repo> — <slug>.md" \
      "sources/handoffs/YYYY-MM-DD Handoff <repo> — <slug>.md"
    ```
-4. **Pará ahí.** No ingieras, no sellés, no toques el wiki ni `system/log.md`.
+4. Commiteá el movimiento (`docs(session): promueve <repo> — <slug> a
+   sources/handoffs/`).
+5. **Pará ahí.** No ingieras, no sellés, no toques el wiki ni `system/log.md`.
    Decile al humano que la fuente quedó lista y que el siguiente paso es
    `ingest @"<nombre>"` cuando quiera.
 
@@ -210,3 +254,5 @@ no promoverla. Proponelo.
 - Crear una segunda nota para un repo que ya tiene una abierta.
 - Elegir vault por criterio propio cuando la tabla no matchea.
 - Disparar un `ingest` automático.
+- `git add -A` en el vault. Barre material del humano que no es tuyo.
+- Dar por hecho que algo commitea la nota por vos.
