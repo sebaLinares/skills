@@ -41,6 +41,8 @@
 !speckit-brief/**
 !wrap/
 !wrap/**
+!to-prompt/
+!to-prompt/**
 
 # Generated Python bytecode
 **/__pycache__/
