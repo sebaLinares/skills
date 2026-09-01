@@ -1,6 +1,6 @@
 ---
 name: wrap
-description: Cierra o pausa una sesión de trabajo con un agente y deja una nota de sesión en el vault de Obsidian que corresponde, con metadata automática. Usa esta skill cuando el usuario escriba /wrap, diga "cierra la sesión", "guarda el contexto", "me tengo que ir", "dejemos esto acá", "esto queda a medias", "handoff", "pasale esto a Codex", "pasale esto a Claude", o cuando una sesión con trabajo en vuelo se interrumpe y hay contexto que se perdería. También con `--close` cuando el trabajo terminó y hay que promover la nota a fuente ingerible. NO la uses para un resumen suelto sin destino durable — para eso está /handoff.
+description: Cierra o pausa una sesión de trabajo con un agente y deja una nota de sesión en el vault de Obsidian que corresponde, con metadata automática. Usa esta skill cuando el usuario escriba /wrap, diga "cierra la sesión", "guarda el contexto", "me tengo que ir", "dejemos esto acá", "esto queda a medias", "handoff", "pasale esto a Codex", "pasale esto a Claude", o cuando una sesión con trabajo en vuelo se interrumpe y hay contexto que se perdería. También con `--close` cuando el trabajo terminó y hay que promover la nota a fuente ingerible, y con `--drop` cuando la sesión no dejó nada durable y la nota se descarta. NO la uses para un resumen suelto sin destino durable — para eso está /handoff.
 ---
 
 # wrap
@@ -87,8 +87,12 @@ Sin eso, un agente frío ve una rama limpia y no puede reconstruir qué pasó.
 Buscá una nota abierta del mismo repo:
 
 ```bash
-ls ~/Notes/<vault>/workspace/sessions/ 2>/dev/null | grep -i "<repo>"
+putils wrap list                # notas abiertas, todas las vaults, con antigüedad
 ```
+
+Mirá las del vault que resolviste en el paso 1. **No uses `ls | grep`**: macOS
+guarda los nombres de archivo en NFD y el contenido en NFC, así que un `grep`
+con tilde no matchea nunca y te hace creer que no hay nota abierta.
 
 - **Existe una del mismo repo y branch** → **actualizala**. No crees una segunda.
   Pisá `updated:` y `agent:`, appendeá a `## Estado`, reescribí `## Falta`,
@@ -218,6 +222,27 @@ es durabilidad, no corrección.
 Imprimí la ruta absoluta del archivo, el vault elegido y **por qué regla**, si
 `project` quedó vacío, y si el commit salió.
 
+## La herramienta: `putils wrap`
+
+Los dos finales de una nota los ejecuta `putils wrap`, no vos a mano.
+Resuelve la vault **desde la ruta de la nota** — no desde la tabla del paso 1,
+que sólo aplica a una nota nueva —, normaliza a NFC antes de comparar nombres,
+y commitea sólo los paths de la nota, nunca material del humano que ande sin
+trackear en el vault.
+
+| comando | qué hace |
+| --- | --- |
+| `putils wrap list` | notas abiertas, todas las vaults |
+| `putils wrap close <patrón>` | promueve a `sources/handoffs/` y commitea |
+| `putils wrap drop <patrón>` | borra y commitea |
+
+El `<patrón>` es un pedazo del nombre del archivo, o una ruta. Códigos de
+salida: **0** hecho, **1** se plantó (patrón ambiguo, nota fuera de
+`workspace/sessions/`, destino que ya existe), **2** no matcheó nada. Con
+cualquier código distinto de 0 **no sigas**: leé lo que imprimió. Si el patrón
+matchea más de una nota las lista y no elige — afiná el patrón, no elijas por
+él. `--dry-run` muestra el plan sin tocar nada.
+
 ## Modo `--close`
 
 Cuando el trabajo terminó y la nota tiene conocimiento durable:
@@ -226,21 +251,38 @@ Cuando el trabajo terminó y la nota tiene conocimiento durable:
    *ingestible ⟺ congelable*: promover significa que la nota deja de editarse.
    "Todavía no" es una respuesta válida y termina acá.
 2. Actualizá la nota por última vez (`updated:`, `## Estado` final).
-3. Promové con `git mv`, renombrando:
+3. Promové y commiteá en un solo paso:
    ```bash
-   mkdir -p ~/Notes/<vault>/sources/handoffs
-   git -C ~/Notes/<vault> mv \
-     "workspace/sessions/YYYY-MM-DD <repo> — <slug>.md" \
-     "sources/handoffs/YYYY-MM-DD Handoff <repo> — <slug>.md"
+   putils wrap close "<slug>"
    ```
-4. Commiteá el movimiento (`docs(session): promueve <repo> — <slug> a
-   sources/handoffs/`).
-5. **Pará ahí.** No ingieras, no sellés, no toques el wiki ni `system/log.md`.
+   Arma el nombre destino insertando `Handoff` después de la fecha, crea
+   `sources/handoffs/` si falta, mueve y commitea. Se planta si el destino ya
+   existe o si la nota ya está promovida.
+4. **Pará ahí.** No ingieras, no sellés, no toques el wiki ni `system/log.md`.
    Decile al humano que la fuente quedó lista y que el siguiente paso es
    `ingest @"<nombre>"` cuando quiera.
 
 Si el trabajo no dejó nada durable, la respuesta correcta es **borrar la nota**,
-no promoverla. Proponelo.
+no promoverla: eso es `--drop`.
+
+## Modo `--drop`
+
+El otro final posible de una nota de sesión, y tan válido como `--close`: la
+sesión no dejó nada que valga la pena congelar.
+
+1. **Confirmá con el humano en una palabra.** Igual que `--close`. "Todavía no"
+   es una respuesta válida y termina acá.
+2. Borrá y commiteá en un solo paso:
+   ```bash
+   putils wrap drop "<slug>"
+   ```
+   Si la nota nunca llegó a commitearse porque el paso 5 falló, la borra del
+   disco y te avisa que no había nada que commitear.
+3. Reportá qué vault y qué archivo.
+
+No hay nada que revertir en el wiki: una nota que nunca salió de
+`workspace/sessions/` nunca fue ingerida. El contenido sigue en el historial de
+git del vault si aparece que hacía falta.
 
 ## Errores a no cometer
 
