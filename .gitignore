@@ -45,6 +45,8 @@
 !to-prompt/**
 !to-prompt-override/
 !to-prompt-override/**
+!pub/
+!pub/**
 
 # Generated Python bytecode
 **/__pycache__/
