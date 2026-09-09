@@ -179,7 +179,27 @@ gate 2.
 El largo lo fija la evidencia, no una cuota. Un prompt de 70 líneas donde cada
 una aporta está bien; uno de 15 de relleno, no.
 
-## Los cinco gates
+### Material a granel: no lo transcribas
+
+Un bloque verbatim de **más de ~30 líneas que el pedido ya trae** — un SVG, un
+log, un dump, un schema, un archivo entero pegado — **no se copia al prompt ni a
+un archivo hermano.**
+
+Reproducirlo cuesta decenas de miles de tokens de salida, tarda minutos, y nadie
+va a revisar la transcripción de 74 KB de `path` y gradientes. En su lugar:
+
+1. En el prompt va una **sección con nombre, vacía**, que diga exactamente qué se
+   pega ahí y en qué orden.
+2. En la salida, una línea le dice al humano qué pegar debajo de esa sección.
+
+El humano **ya es el transporte**: copia el prompt y lo pega en el agente
+destino. Puede pegar dos cosas. El material ya está en su mano y al modelo le
+cuesta 20.000 tokens volver a escribirlo.
+
+El umbral es por **bloque pegado**, no por total del pedido. Menos de 30 líneas,
+va inline.
+
+## Los seis gates
 
 Bloquean la salida. No son checklist: si uno falla, **no se emite**.
 
@@ -190,6 +210,15 @@ Bloquean la salida. No son checklist: si uno falla, **no se emite**.
 | 3 | Comprobable | no hay criterio de término verificable | escribilo, o preguntalo |
 | 4 | Un objetivo | hay dos trabajos mezclados | paso 6 |
 | 5 | Capacidad | le pedís algo que el destino no puede hacer | reformulá o cambiá de destino |
+| 6 | Transportable | el prompt viaja por el portapapeles: pierde su cwd y no arrastra adjuntos | ver abajo |
+
+**Gate 6 en concreto.** El prompt se pega en un agente que corre en **otro
+directorio**, y el archivo del prompt no viaja con él. Falla si:
+
+- hay una ruta relativa — `./`, `../`, "mismo directorio", "el archivo hermano".
+  Toda ruta que el prompt emite es **absoluta**, o **relativa a la raíz del repo
+  destino**;
+- referencia material que el prompt no lleva y que la salida no manda a pegar.
 
 **Derivable = el destino lo puede releer del repo.** Una referencia externa que
 el pedido trajo textual — una URL, un link de Figma, un ticket con su link — no
@@ -208,7 +237,9 @@ se termina con el prompt en el chat.**
    `<repo>`: nombre del directorio del repo, o `_sin-repo`.
    `<slug>`: kebab-case corto del pedido.
 2. `pbcopy < <ruta>`.
-3. Reportá en **3 líneas**:
+3. Si hay material a granel, decí en **una línea** qué tiene que pegar el humano
+   y debajo de qué sección del prompt.
+4. Reportá en **3 líneas**:
    - destino elegido y esqueleto usado;
    - qué borró cada gate, **en número**: `gate 2 → 12 líneas`, o `gate 2 → 0`.
      Nunca en prosa: "no borró nada grande" no se puede auditar;
