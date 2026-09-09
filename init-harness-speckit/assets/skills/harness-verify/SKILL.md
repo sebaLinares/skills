@@ -1,7 +1,6 @@
 ---
 name: harness-verify
 description: "Run the active spec-kit plan's verify command."
-disable-model-invocation: true
 ---
 
 Run:

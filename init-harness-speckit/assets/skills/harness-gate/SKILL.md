@@ -1,7 +1,6 @@
 ---
 name: harness-gate
 description: "Run the spec-kit implementation gate."
-disable-model-invocation: true
 ---
 
 Run:

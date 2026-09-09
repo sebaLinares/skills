@@ -1,7 +1,6 @@
 ---
 name: harness-loop
 description: "Run the spec-kit loop termination check."
-disable-model-invocation: true
 ---
 
 Run:

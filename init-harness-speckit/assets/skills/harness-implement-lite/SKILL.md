@@ -1,7 +1,6 @@
 ---
 name: harness-implement-lite
 description: "Execute the active analyzed plan directly without speckit tasks."
-disable-model-invocation: true
 ---
 
 Run:
