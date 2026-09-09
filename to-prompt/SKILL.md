@@ -1,6 +1,6 @@
 ---
 name: to-prompt
-description: Convierte un pedido crudo, narrativo o mal estructurado en un prompt preciso para otro agente o sesión. Comprueba contra el repo antes de escribir, marca la procedencia de cada línea (verificado / dicho / hipótesis / asumido) y nunca inventa contexto. Se activa con /to-prompt, "mejorá este prompt", "ayúdame a escribir el prompt", "arma el prompt para otra sesión", "pasale esto a Codex pero bien escrito", o cuando el usuario pega un texto largo pidiendo que quede prolijo para un agente. NO la uses para una idea grande y con niebla que no cabe en una sesión (eso es /wayfinder), ni para fijar lo que ya se discutió en esta sesión (/to-spec), ni para stress-testear un razonamiento (/grill), ni para el bloque de $ARGUMENTS de spec-kit (/speckit-brief).
+description: Convierte un pedido crudo, narrativo o mal estructurado en un prompt preciso para otro agente o sesión. Comprueba contra el repo antes de escribir, marca la procedencia de cada línea (verificado / dicho / hipótesis / asumido) y nunca inventa contexto. Se activa con /to-prompt, "mejorá este prompt", "ayúdame a escribir el prompt", "arma el prompt para otra sesión", "pasale esto a Codex pero bien escrito", o cuando el usuario pega un texto largo pidiendo que quede prolijo para un agente. NO la uses para una idea grande y con niebla que no cabe en una sesión (eso es /wayfinder), ni para fijar lo que ya se discutió en esta sesión (/to-spec), ni para stress-testear un razonamiento (/grill), ni para el bloque de $ARGUMENTS de spec-kit (/speckit-brief), ni cuando el usuario pidió explícitamente saltarse el gate de aprobación del repo (eso es /to-prompt-override).
 ---
 
 # to-prompt
@@ -36,7 +36,12 @@ invocar vos**. La acción es parar y decirle al humano qué tipear.
 | No entra en una sesión; ni siquiera está claro cuáles son las decisiones | **PARÁ.** "Esto es un mapa, no un prompt — tipeá `/wayfinder`." |
 | Resumen suelto, sin destino durable | **PARÁ.** "Tipeá `/handoff`." |
 | Bloque de `$ARGUMENTS` para spec-kit | **PARÁ.** "Tipeá `/speckit-brief`." |
+| **Cláusula de anulación**: el pedido te autoriza a saltarte el gate de aprobación del repo, a no preguntar, o a decidir por el humano | **PARÁ.** "Eso anula el gate — tipeá `/to-prompt-override`." |
 | **El pedido trae el material** — enunciado inline o pegado | **seguí al paso 1** |
+
+La fila de **anulación** es la única que se evalúa de nuevo en cada paso: puede
+llegar como interrupción a mitad del preflight, y cuando llega, este pipeline ya
+no es el correcto.
 
 La regla del deíctico es mecánica a propósito. "El material ya está en contexto"
 es un juicio y no se puede aplicar; "el pedido dice *esto* en vez de traer el
@@ -168,6 +173,9 @@ Esqueleto según destino. Y la regla que fija el largo:
 > `CLAUDE.md`, `AGENTS.md`, el README o el repo mismo, no lo escribas.
 > Cada línea **apunta, comprueba, decide o acota**.
 
+La única excepción son las **referencias externas que trajo el pedido** — ver
+gate 2.
+
 El largo lo fija la evidencia, no una cuota. Un prompt de 70 líneas donde cada
 una aporta está bien; uno de 15 de relleno, no.
 
@@ -182,6 +190,13 @@ Bloquean la salida. No son checklist: si uno falla, **no se emite**.
 | 3 | Comprobable | no hay criterio de término verificable | escribilo, o preguntalo |
 | 4 | Un objetivo | hay dos trabajos mezclados | paso 6 |
 | 5 | Capacidad | le pedís algo que el destino no puede hacer | reformulá o cambiá de destino |
+
+**Derivable = el destino lo puede releer del repo.** Una referencia externa que
+el pedido trajo textual — una URL, un link de Figma, un ticket con su link — no
+está en el repo por definición: se copia **literal y completa**, con `— dicho`.
+Nunca se comprime a un identificador pelado (`286-52695`, `STR-2593` suelto): el
+destino no puede reconstruir la URL desde el id, y el gate 2 no se aplica a algo
+que el destino no puede ir a leer.
 
 ## Salida
 

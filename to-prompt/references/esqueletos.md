@@ -55,9 +55,21 @@ No modifiques ningún archivo en esta fase.
 1. …
 2. …
 
+## Fuente de verdad
+
+<solo cuando el pedido nombra un artefacto externo — un diseño, un doc, un
+ticket — que puede contradecir lo que hay en el repo. Es una regla de desempate
+entre **descripciones de la realidad**, no entre enfoques: por eso no va en la
+escalera de abajo.>
+
+Ante cualquier diferencia entre <artefacto> y el código actual, manda
+<artefacto>. El código de hoy es el estado a corregir, no una referencia a
+preservar.
+
 ## Cómo resolver los tradeoffs
 
-<orden de prioridad explícito cuando exista>
+<orden de prioridad explícito cuando exista. Esto desempata **enfoques**, no
+fuentes.>
 
 extender lo que ya existe > componente local chico > app nueva > servicio
 
@@ -147,6 +159,11 @@ contexto de hoy. **Nada de proceso** — el proceso lo pone el que lo tome.
 ## Contexto verificado
 
 - … — verificado
+
+## Fuente de verdad
+
+<solo si el issue nombra un artefacto externo que puede contradecir el repo.
+Quien lo tome en tres semanas no va a tener el contexto de hoy para desempatar.>
 
 ## Bloqueado por
 
