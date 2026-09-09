@@ -1,6 +1,6 @@
 ---
 name: to-prompt-override
-description: Escribe el prompt para otro agente cuando el usuario ya decidió saltarse el gate de aprobación del repo destino - sin ronda de preguntas, delegando las decisiones abiertas al agente, y con un bloque de anulación explícito al principio del prompt. Mantiene intactos el preflight, la procedencia (verificado / dicho / hipótesis / asumido) y los cinco gates de /to-prompt - solo invierte el umbral de decisiones y elimina la ronda de preguntas. Se activa SOLO con /to-prompt-override, o cuando el usuario pide explícitamente anular el gate - "no esperes mi aprobación", "las decisiones las tomás vos", "no me hagas preguntas", "codealo ya, reviso yo local". Si el usuario no pidió explícitamente saltarse el gate, usá /to-prompt - nunca infieras la anulación.
+description: Escribe el prompt para otro agente cuando el usuario ya decidió saltarse el gate de aprobación del repo destino - sin ronda de preguntas, delegando las decisiones abiertas al agente, y con un bloque de anulación explícito al principio del prompt. Mantiene intactos el preflight, la procedencia (verificado / dicho / hipótesis / asumido) y los seis gates de /to-prompt - solo invierte el umbral de decisiones y elimina la ronda de preguntas. Se activa SOLO con /to-prompt-override, o cuando el usuario pide explícitamente anular el gate - "no esperes mi aprobación", "las decisiones las tomás vos", "no me hagas preguntas", "codealo ya, reviso yo local". Si el usuario no pidió explícitamente saltarse el gate, usá /to-prompt - nunca infieras la anulación.
 ---
 
 # to-prompt-override
@@ -10,7 +10,7 @@ del repo destino.
 
 No es una versión rápida ni una versión relajada. Es la misma skill con **dos
 inversiones**, y nada más. Todo lo que hace bueno a `/to-prompt` — el preflight,
-la procedencia, los cinco gates — queda igual, porque nada de eso era lo que
+la procedencia, los seis gates — queda igual, porque nada de eso era lo que
 frenaba al humano.
 
 ## La única diferencia
@@ -28,7 +28,8 @@ Todo lo demás **no cambia y no se relaja**:
 | Paso 1 — preflight completo | es lo que hace que el prompt sea correcto. La urgencia no compra el derecho a inventar |
 | Paso 2 — "ya existe" → **PARÁ** | construir lo que ya está construido cuesta una sesión entera. Con apuro cuesta lo mismo |
 | Paso 6 — un solo objetivo | — |
-| Los cinco gates | la procedencia es barata y es la regla de oro |
+| Paso 7 — material a granel no se transcribe | reproducir 74 KB de SVG pegado costó 14 min en una corrida real. Es la mitad del reloj, y no compra nada |
+| Los **seis** gates | la procedencia es barata y es la regla de oro. El gate 6 (transportable) pega más fuerte acá: nadie te va a frenar para avisarte que la ruta no resuelve |
 
 Los comandos del preflight y los tres esqueletos **no se duplican acá**: se leen
 de `~/.claude/skills/to-prompt/SKILL.md` (pasos 1 y 4) y de
@@ -73,6 +74,17 @@ emite, no** — una cláusula que el humano no contestó no se inventa, se repor
 | 3 | ¿Commitea, abre PR, o no toca git? | el bloque |
 | 4 | ¿Qué artefacto gana un conflicto con el código? | **no va acá** — va a `## Fuente de verdad` del esqueleto compartido |
 
+**Una viñeta por cláusula, máximo 3 líneas.** El bloque es autoridad, no
+argumento. Si hace falta justificar *por qué* la anulación es legítima — que el
+asset nuevo no es lo que la tarea bloqueada prohibía, que el ticket ya se
+cerró — eso es una **afirmación sobre el mundo**: va a `## Hechos ya comprobados`
+con su `— verificado`, y el bloque apunta ahí en media línea.
+
+**Una cláusula sin contestar no se escribe en el bloque.** Va a la línea 4 del
+reporte y a ningún otro lado. Inventarla y justificarla con un default plausible
+("no commitees — default del repo") es exactamente lo que la regla prohíbe: es
+una instrucción inventada con una coartada, no un hueco reportado.
+
 Y el bloque **no se puede escribir sin su contrapartida**: si nadie te va a
 frenar antes, el humano necesita saber después qué decidiste por él. Esa línea
 es estructural, no opcional.
@@ -113,7 +125,8 @@ el gate del repo anulado a mitad del preflight:
   vía comentario/PR. No pares a esperar respuesta.
      ↑ literal. La perifrástica no funcionó.
 - No hagas commit al terminar. El usuario revisa localmente.
-     ↑ cláusula 3, dicha por el humano. Si no la hubiera dicho: no se inventa.
+     ↑ cláusula 3, **dicha** por el humano. Si no la hubiera dicho, esta viñeta
+       no existe: el hueco va al reporte, no al bloque con un default inventado.
 - Al terminar, listá cada decisión que tomaste por mí y por qué.
      ↑ la contrapartida. Sin esto, el humano reconstruye 4 decisiones leyendo el diff.
 ```
@@ -127,6 +140,20 @@ Ante cualquier diferencia entre lo que ya está codeado en el repo y lo que
 muestra el Figma que trajo el usuario, manda el Figma. El código actual es el
 estado viejo a corregir, no una referencia a preservar.
 ```
+
+## Material a granel y rutas
+
+Dos reglas de `/to-prompt` que acá se rompen más seguido, porque no hay ronda de
+preguntas donde el humano las note:
+
+- **No transcribas material a granel** (paso 7 de `/to-prompt`). Un bloque
+  verbatim de más de ~30 líneas que el pedido ya trajo — SVG, log, dump, un
+  archivo pegado — va como **sección vacía con nombre**, y la salida le dice al
+  humano qué pegar debajo. Nunca a un archivo hermano: eso cuesta los mismos
+  tokens y además rompe la regla de abajo.
+- **Ninguna ruta relativa** (gate 6). El prompt se pega en un agente que corre en
+  el repo destino, no donde vive el archivo del prompt. "Mismo directorio" y "el
+  archivo hermano" no resuelven a nada del otro lado.
 
 ## Las decisiones delegadas
 
@@ -147,7 +174,8 @@ nombralo en la línea 4 del reporte.
 
 Igual que `/to-prompt` — archivo en
 `~/Documents/agent-scratch/<repo>/<slug>/<AAAA-MM-DD>-prompt.md`, después
-`pbcopy < <ruta>`.
+`pbcopy < <ruta>`. Si hay material a granel, una línea que diga qué pega el
+humano y debajo de qué sección.
 
 El reporte son **cuatro** líneas, no tres:
 
@@ -155,7 +183,8 @@ El reporte son **cuatro** líneas, no tres:
 2. qué borró cada gate, en número: `gate 2 → 12 líneas`;
 3. qué quedó `— hipótesis` / `— asumido`, más los hallazgos del preflight;
 4. **qué autoridad se anuló** (`CLAUDE.md:NN`), **qué decisiones quedaron
-   delegadas** (numeradas), y **qué cláusulas de las cuatro se asumieron**.
+   delegadas** (numeradas), y **cuáles de las cuatro cláusulas el humano no
+   contestó** — nombradas acá justamente porque no se escribieron en el bloque.
 
 La cuarta línea existe porque acá el humano no tiene ningún otro checkpoint.
 En `/to-prompt` el gate final es el humano leyendo el reporte; acá es el **único**
