@@ -1,6 +1,6 @@
 ---
 name: harness-loop
-description: "Run the spec-kit loop termination check."
+description: "Loop-termination check for the spec-kit harness: runs speckit_gate.py loop after /speckit-converge and, on stop-converged, closeout, which sets the plan to status: completed. Use when the after_converge hook fires or the user asks whether the unattended loop should continue."
 ---
 
 Run:

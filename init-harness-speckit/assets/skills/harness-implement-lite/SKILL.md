@@ -1,6 +1,6 @@
 ---
 name: harness-implement-lite
-description: "Execute the active analyzed plan directly without speckit tasks."
+description: "Lite Execute path of the spec-kit harness: runs speckit_gate.py gate-lite and, only if it passes, executes the active specs/<feature>/plan.md directly without tasks.md, inside the plan's covers:, until its verify: is green. Use when the before_implement hook or the user picks the lite path for a small analyzed plan. Not for plans that have tasks.md (that is /speckit-implement)."
 ---
 
 Run:
