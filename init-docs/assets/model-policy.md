@@ -1,7 +1,7 @@
 ---
 owner: {{REPO_NAME}}
 status: stable
-last_reviewed: 2026-07-02
+last_reviewed: 2026-09-23
 update_trigger: on-fleet-policy-change
 ---
 
@@ -24,9 +24,16 @@ that flag.
 
 | Tier | Current model | Role |
 |---|---|---|
-| Orchestrator | Sonnet 4.6 high | Owns the main session loop, repo continuity, artifact routing, and ordinary edits. |
-| Design subagent | Opus 4.8 xhigh | Handles synthesis-heavy design surfaces where marginal reasoning capability matters. |
-| Checker / rescue | GPT-5.5 high via codex plugin | Provides structurally independent review, verification, rescue, and async result harvest. |
+| Orchestrator | Sonnet 5 high | Owns the main session loop, repo continuity, artifact routing, and ordinary edits. |
+| Design subagent | Opus 5.5 xhigh | Handles synthesis-heavy design surfaces where marginal reasoning capability matters. |
+| Checker / rescue | GPT-5.6-sol high via codex plugin | Provides structurally independent review, verification, rescue, and async result harvest. |
+
+The versions above are what each tier actually ran at `last_reviewed`, not
+something the harness pins. The Claude tiers go through aliases (`sonnet` for
+the main session; `opus` in the subagent configs and Task calls), and Claude
+Code moves an alias to the newest model of its family. The checker passes no
+`--model`, so it runs the default model in `~/.codex/config.toml`. On each
+review, re-check both before editing this table.
 
 ## Per-step assignments
 
@@ -41,11 +48,11 @@ that flag.
 | 7 | Harness-version check | Orchestrator | Main session | Compare `.harness-version` with the init-docs changelog head. |
 | 8 | Phase 1 brief capture | Orchestrator | Main session | Restate the brief and ensure Feature coverage. |
 | 9 | Phase 2 investigation | Orchestrator | Main session | Gather code and doc context for the analysis doc. |
-| 10 | Phase 2 synthesis | Design subagent | Claude Task tool, Opus 4.8 xhigh | Synthesize the analysis doc from a self-contained brief. |
+| 10 | Phase 2 synthesis | Design subagent | Claude Task tool, Opus 5.5 xhigh | Synthesize the analysis doc from a self-contained brief. |
 | 11 | Phase 3 findings review | Orchestrator | Main session | Apply lead feedback and resolve or defer open questions. |
 | 12 | Phase 4 scoped decisions | Orchestrator | Main session | Record plan-local decisions inline. |
-| 13 | Phase 4 broad or irreversible ADRs | Design subagent | Claude Task tool, Opus 4.8 xhigh | Draft ADRs with cross-plan or hard-to-reverse scope. |
-| 14 | Phase 5 ExecPlan | Design subagent | Claude Task tool, Opus 4.8 xhigh | Draft every ExecPlan. No complexity threshold — see ADR pre-approval-critic-gate. |
+| 13 | Phase 4 broad or irreversible ADRs | Design subagent | Claude Task tool, Opus 5.5 xhigh | Draft ADRs with cross-plan or hard-to-reverse scope. |
+| 14 | Phase 5 ExecPlan | Design subagent | Claude Task tool, Opus 5.5 xhigh | Draft every ExecPlan. No complexity threshold — see ADR pre-approval-critic-gate. |
 | 15 | Pre-approval critic | Checker / rescue | `codex:adversarial-review` | Review every draft plan before lead approval. **Auto-invoked synchronously** by `.claude/hooks/harness-planner-critic-hook.mjs` on `harness-planner` SubagentStop; the hook writes the verdict into the plan's `## Pre-approval critic transcript` section. Failure modes (plugin missing, codex crash) write a `BLOCKED: <reason>` placeholder in the same section. See ADR pre-approval-critic-gate. |
 | 16 | Phase 6 execution | Orchestrator | Main session | Execute approved plan steps and update progress. |
 | 17 | Mid-execution diff sanity | Checker / rescue | `node "$(find ~/.claude/plugins -name codex-companion.mjs -type f 2>/dev/null | head -1)" review` | Request when the diff grows broad, risky, or surprising. The `/codex:review` slash command sets `disable-model-invocation: true`, so the orchestrator invokes the underlying companion script via Bash. |

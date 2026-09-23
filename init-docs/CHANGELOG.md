@@ -21,6 +21,36 @@ the marker one entry at a time.
 
 ---
 
+## 2026-09-23.001 — Model lineup matches what the aliases actually run
+
+**What:** `model-policy.md` § Tiers named Sonnet 4.6 / Opus 4.8 / GPT-5.5, but
+none of those were running. The subagent configs and the documented Task call
+use the `opus` alias, and the main session defaults to `sonnet`. Claude Code
+moves each alias to the newest model in its family: in Claude Code 2.1.280,
+`opus` → `claude-opus-5-5` and `sonnet` → `claude-sonnet-5`. The checker
+dispatch passes no `--model`, so Codex runs its configured default
+(`gpt-5.6-sol`, effort `high`). The table and the three per-step Invocation
+cells (steps 10, 13, 14) now record those models. A short note under the table
+says the pins are observed rather than enforced, and what to re-check on the
+next review. `last_reviewed` bumped to `2026-09-23`. No other doc pins a
+version (single-sourced since 2026-06-16.001), so nothing else changes.
+
+**Why:** the policy exists so telemetry compares like with like. A pin that
+disagrees with what runs makes every comparison wrong. The explicit
+`effort: xhigh` in the subagent configs matters more now, because Opus 5.5
+defaults to `medium` when effort is unset.
+
+**How to apply (idempotent, stack-neutral):**
+1. In `docs/processes/model-policy.md` § Tiers, set the Current model cells to
+   `Sonnet 5 high`, `Opus 5.5 xhigh`, and `GPT-5.6-sol high via codex plugin`.
+   Skip any cell that already matches.
+2. In § Per-step assignments, replace `Opus 4.8 xhigh` with `Opus 5.5 xhigh`
+   in the Invocation cells. Skip if none remain.
+3. If § Tiers has no paragraph beginning "The versions above are what each
+   tier actually ran", add it after the table, copied from
+   `assets/model-policy.md`.
+4. Set `last_reviewed` in `docs/processes/model-policy.md` to `2026-09-23`.
+
 ## 2026-07-02.001 — Correct the CLAUDE_PLUGIN_ROOT assumption in codex dispatch commands
 
 **What:** The checker-dispatch command templates asserted that
