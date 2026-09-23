@@ -1,6 +1,6 @@
 ---
 name: pub
-description: Publica un archivo HTML local en el origen tailnet del Mac Mini con `putils pub` y devuelve una sola URL pegable, para abrirla desde el iPhone u otro dispositivo del tailnet. Usá esta skill cuando el usuario escriba /pub, adjunte un `.html` y pida verlo en el teléfono, diga "publicá esto", "publicá este html", "quiero verlo en el iPhone", "pasámelo al celular", "publish this html", "put this on the tailnet", o mencione un archivo bajo `~/.claude/uploads/` o la carpeta `pub-inbox` de iCloud. También cuando pida borrar publicaciones viejas (`--gc`). NO la uses para deploys a internet, GitHub Pages, Cloudflare, Tailscale Funnel, ni para servir un directorio entero o levantar un servidor: solo publica un archivo HTML estático que ya existe.
+description: 'Publica un archivo HTML local en el origen tailnet del Mac Mini con `putils pub` y devuelve una sola URL pegable, para abrirla desde el iPhone u otro dispositivo del tailnet. Usá esta skill cuando el usuario escriba /pub, adjunte un `.html` y pida verlo en el teléfono, diga "publicá esto", "publicá este html", "quiero verlo en el iPhone", "pasámelo al celular", "publish this html", "put this on the tailnet", o mencione un archivo bajo `~/.claude/uploads/` o la carpeta `pub-inbox` de iCloud. También cuando pida borrar publicaciones viejas (`--gc`). NO la uses para deploys a internet, GitHub Pages, Cloudflare, Tailscale Funnel, ni para servir un directorio entero o levantar un servidor: solo publica un archivo HTML estático que ya existe.'
 ---
 
 # pub
