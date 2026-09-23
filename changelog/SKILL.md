@@ -39,16 +39,7 @@ Identify and bucket the file list before summarizing:
 
 ## Step 3 — Generate bullets via a cheap subagent
 
-Identify the current AI provider powering this session and spawn the equivalent fast/cheap model:
-
-| Provider | Model to spawn |
-|---|---|
-| Anthropic (Claude) | `haiku` |
-| OpenAI | `gpt-4o-mini` |
-| Google | `gemini-2.0-flash` |
-| Other | smallest/fastest available model |
-
-Spawn the subagent with a self-contained prompt that includes:
+Spawn the subagent on the fastest, cheapest model the current harness can run — `haiku` in Claude Code, otherwise the harness's smallest available model — with a self-contained prompt that includes:
 
 - The bucketed file list (with `deps` + binary files already collapsed)
 - The (possibly truncated) diff

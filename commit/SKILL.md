@@ -62,16 +62,7 @@ Collect repo-relative paths of any matches. You'll use them in Step 5.
 
 ## Step 4 — Generate commit message via cheap subagent
 
-Identify the current AI provider powering this session and spawn the equivalent fast/cheap model:
-
-| Provider | Model to spawn |
-|---|---|
-| Anthropic (Claude) | `haiku` |
-| OpenAI | `gpt-4o-mini` |
-| Google | `gemini-2.0-flash` |
-| Other | smallest/fastest available model |
-
-Spawn the subagent with this prompt:
+Spawn the subagent on the fastest, cheapest model the current harness can run — `haiku` in Claude Code, otherwise the harness's smallest available model — with this prompt:
 
 ```
 You are a git commit message writer. Write a single Conventional Commit message for the diff below.

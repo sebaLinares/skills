@@ -17,7 +17,7 @@ Or just say: **"commit this"**, **"make a commit"**, **"save my work"**
 1. Checks `git status` — stops if nothing to commit
 2. Stages unstaged changes (`git add -A`) if nothing is staged yet
 3. Reads the diff and last commit for context
-4. Spawns a fast/cheap model (Haiku, gpt-4o-mini, etc.) to write the message
+4. Spawns a fast/cheap model (Haiku in Claude Code, else the harness's smallest model) to write the message
 5. Runs `git commit -m "<generated message>"`
 6. Reports the commit hash
 
