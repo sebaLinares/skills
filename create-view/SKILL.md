@@ -117,4 +117,4 @@ Created docs/views/<name>.yaml
   exclude: <nodes, or "none">
 ```
 
-If this view is likely to be rendered as a diagram, suggest running `/drawio` next.
+If this view is likely to be rendered as a diagram, suggest running `/method-diagram docs/views/<name>.yaml` next.

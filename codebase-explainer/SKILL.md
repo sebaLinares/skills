@@ -8,7 +8,8 @@ description: >-
   where; asks to document or visualize a codebase's architecture; wants a
   write-up of an investigation's findings; or says things like "make this a
   visual doc", "create an html explaining...", "show me what changed
-  visually". Publishes via the Artifact tool.
+  visually". Publishes via the Artifact tool. Prefer this over drawio when the
+  deliverable is an HTML explainer rather than a .drawio file.
 ---
 
 # codebase-explainer

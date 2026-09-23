@@ -28,7 +28,7 @@ Before tracing any code, read `docs/architecture/di-token-map.md`.
 
 If this file does not exist, stop and tell the user:
 
-> `docs/architecture/di-token-map.md` is missing. This file maps injection tokens to their concrete implementations and is required by this skill. Please create it before running `/map-endpoint`. See `docs/processes/call-chain-graphs.md` for the expected format.
+> `docs/architecture/di-token-map.md` is missing. This file maps injection tokens to their concrete implementations and is required by this skill. Run `/di-map` to generate it, then re-run `/map-endpoint`. See `docs/processes/call-chain-graphs.md` for the expected format.
 
 ### Step 2 — Identify the target
 

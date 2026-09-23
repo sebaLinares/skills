@@ -9,6 +9,7 @@ description: >-
   methods to include and produces an inline-expansion swimlane flowchart;
   method-driven: reads one method directly from source and produces a
   single-method flowchart. Output is a .drawio file saved to docs/architecture/.
+  Prefer this over drawio for a flowchart of a method or a view in this codebase.
 ---
 
 # method-diagram
