@@ -1,0 +1,34 @@
+--- a/drawio/SKILL.md
++++ b/drawio/SKILL.md
+@@ -110,11 +110,11 @@
+ 
+ Check the user's request for a format preference. Examples:
+ 
+-- `/drawio:drawio create a flowchart` → Mermaid → `flowchart.drawio`
+-- `/drawio:drawio png flowchart for login` → Mermaid → `login-flow.drawio.png`
+-- `/drawio:drawio svg: ER diagram` → Mermaid → `er-diagram.drawio.svg`
+-- `/drawio:drawio pdf AWS architecture overview` → XML (needs AWS shapes) → `architecture-overview.drawio.pdf`
+-- `/drawio:drawio url flowchart for user login` → opens browser at `app.diagrams.net` with the diagram, keeps `login-flow.drawio` locally
++- `/drawio create a flowchart` → Mermaid → `flowchart.drawio`
++- `/drawio png flowchart for login` → Mermaid → `login-flow.drawio.png`
++- `/drawio svg: ER diagram` → Mermaid → `er-diagram.drawio.svg`
++- `/drawio pdf AWS architecture overview` → XML (needs AWS shapes) → `architecture-overview.drawio.pdf`
++- `/drawio url flowchart for user login` → opens browser at `app.diagrams.net` with the diagram, keeps `login-flow.drawio` locally
+ 
+ If no format is mentioned, just produce the `.drawio` file and open it in draw.io. The user can always ask to export later.
+ 
+@@ -416,9 +416,12 @@
+ 
+ ## XML reference
+ 
+-For the complete draw.io XML reference including common styles, edge routing, containers, layers, tags, metadata, dark mode colors, and XML well-formedness rules, fetch and follow the instructions at:
+-https://raw.githubusercontent.com/jgraph/drawio-mcp/main/shared/xml-reference.md
++For the complete draw.io XML reference including common styles, edge routing, containers, layers, tags, metadata, dark mode colors, and XML well-formedness rules, read the local copy with the Read tool:
++
++`~/.claude/skills/drawio/references/xml-reference.md`
+ 
++It is synced from upstream, so don't fetch the URL or spawn a subagent for it.
++
+ ## Troubleshooting
+ 
+ | Problem | Cause | Solution |
