@@ -105,7 +105,7 @@ verificar. "El sistema debe poder contestar *qué quedó a medias*" sí.
 
 ## El cierre
 
-El prompt resultante llevó a lo que hoy es la skill `wrap`: tabla de rutas a
+El prompt resultante llevó a lo que hoy es la skill `session-note`: tabla de rutas a
 vaults, la ubicación como estado (`workspace/sessions/` = abierta), y `ingest`
 que sigue siendo conversacional.
 
@@ -117,7 +117,7 @@ escribir más lindo.
 ## Nota: correr este mismo pedido hoy da otra respuesta
 
 Si hoy le pegás este pedido crudo a `to-prompt`, el preflight ya no llega a las
-preguntas: encuentra que `~/sebalinares-skills/wrap` **ya hace** todo lo que el
+preguntas: encuentra que `~/sebalinares-skills/session-note` **ya hace** todo lo que el
 pedido pide — tabla de rutas a vaults, la nota escrita directo en
 `workspace/sessions/`, `--close` que promueve a `sources/handoffs/` — y que
 `~/Notes/slinaresl/sources/handoffs/` ya está poblada.

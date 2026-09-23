@@ -39,8 +39,8 @@
 !codebase-explainer/**
 !speckit-brief/
 !speckit-brief/**
-!wrap/
-!wrap/**
+!session-note/
+!session-note/**
 !to-prompt/
 !to-prompt/**
 !to-prompt-override/

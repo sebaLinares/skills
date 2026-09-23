@@ -28,7 +28,7 @@ La skill se instala en todas las máquinas y **las tres sesiones Brain la ven**
 (Personal, Cencosud, Electromática). El binario chequea el hostname de la Mini,
 pero **no distingue entre las tres**. El muro lo pone esta skill.
 
-Aplicá la tabla de routing de vaults del **paso 1 de `wrap/SKILL.md`** (no la
+Aplicá la tabla de routing de vaults del **paso 1 de `session-note/SKILL.md`** (no la
 copies acá: leela ahí, es la única copia). Resolvela sobre **dos** paths, y los
 dos tienen que dar el mismo resultado:
 
